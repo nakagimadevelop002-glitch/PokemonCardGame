@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTCGL風 サーナイトex ミラー（v4.9.3 / 特性実装＋開始強制・初期化堅牢化）</title>
+<style>
+:root { --bg:#0b1020; --panel:#101734; --text:#eaf2ff; --muted:#9fb3d1; --accent:#6ad1ff; --ok:#6aff98; --warn:#ffd36a; --danger:#ff6a6a; }
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",Roboto,Helvetica,Arial,sans-serif}
+header{padding:12px 16px;border-bottom:1px solid #1b2444;background:linear-gradient(90deg,rgba(106,209,255,.12),rgba(255,150,255,.12))}
+h1{margin:0 0 6px 0;font-size:18px} .sub{color:var(--muted);font-size:12px}
+main{display:grid;grid-template-columns:1fr 400px;gap:12px;padding:12px}
+.board{background:var(--panel);border:1px solid #1a2344;border-radius:10px;padding:10px}
+.right{display:flex;flex-direction:column;gap:12px}
+.zone-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
+.zone{background:#0f1530;border:1px dashed #2a3561;border-radius:8px;min-height:96px;display:flex;align-items:center;justify-content:center;position:relative;padding:4px}
+.zone .label{position:absolute;top:4px;left:6px;font-size:11px;color:var(--muted)}
+.pokemon{width:100%;height:100%;background:#141d3b;border:1px solid #2a3561;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.pokemon.selected{outline:2px solid var(--accent)}
+.name{font-weight:700;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+.badge{font-size:10px;padding:1px 6px;border-radius:999px;background:#25305c;color:#b9c7ef}
+.hp{height:8px;background:#2a2f4d;border-radius:999px;overflow:hidden}
+.hp>i{display:block;height:100%;background:linear-gradient(90deg,#37e06e,#f6ca2f,#ff5f5f);width:100%}
+.line{font-size:11px;color:#c7d6ff;display:flex;gap:6px;flex-wrap:wrap}
+.energies{display:flex;gap:4px}
+.energy{width:14px;height:14px;border-radius:50%;background:radial-gradient(#b98cff,#8247ff);border:1px solid rgba(255,255,255,.2)}
+.status{display:flex;gap:4px}
+.st{font-size:10px;padding:1px 4px;border-radius:4px;background:#3a2b2b}
+.st.psn{background:#2e6035} .st.brn{background:#6b362c} .st.par{background:#5b5b25}
+.st.slp{background:#2d3b63} .st.cnf{background:#5b2e5b}
+.section-title{font-size:13px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.cards{display:flex;flex-wrap:wrap;gap:6px}
+.card{background:#1a2244;border:1px solid #2a3561;border-radius:6px;padding:6px;min-width:140px;max-width:260px;display:flex;flex-direction:column;gap:4px}
+.card .title{font-weight:700;font-size:12px}
+.card .meta{font-size:11px;color:#c8d2f0}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+button{background:#1f3b6b;color:var(--text);border:1px solid #2a3561;border-radius:6px;padding:6px 8px;font-size:12px;cursor:pointer}
+button:hover{background:#26457d}
+button.ok{background:#1f5e36} button.warn{background:#5e4d1f} button.danger{background:#5e1f2a}
+button:disabled{opacity:.45;cursor:not-allowed}
+.pill{background:#222d55;border-radius:999px;padding:2px 8px;font-size:11px}
+.log{background:#0f1530;border:1px solid #1a2344;border-radius:8px;padding:8px;height:280px;overflow:auto;font-size:12px}
+.small{font-size:11px;color:#b9c7ef}
+.hint{color:#adc1ea;font-size:12px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:999}
+.modal .box{width:min(960px,92vw);max-height:86vh;overflow:auto;background:#101732;border:1px solid #2a3561;border-radius:10px;padding:12px}
+.modal h3{margin:0 0 8px 0;font-size:16px}
+.choice{display:inline-block;margin:3px 4px;padding:6px 10px;background:#22325f;border:1px solid #2a3e74;border-radius:6px;cursor:pointer}
+.choice.selected{outline:2px solid var(--accent)}
+.footer{font-size:11px;color:#9fb3d1;text-align:center;padding:8px}
+.topbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.flex{display:flex;gap:12px;flex-wrap:wrap}
+.col{flex:1 1 240px}
+hr.dim{border-color:#1a2344}
+</style>
+</head>
+<body>
+<header>
+  <h1>PTCGL風 ミラーマッチ：サーナイトex（v4.9.3 / 特性実装＋開始強制・初期化堅牢化）</h1>
+  <div class="sub">マシマシラ厳密・ふしぎなアメ厳密・1ターン1攻撃・ハイパーボール候補修正・開始ボタン強制・初期化ガード・[BOOT]診断ログ・<b>特性ボタン（アドレナブレイン／ふしぎなしっぽ）実装</b>。</div>
+</header>
+
+<main>
+  <section class="board" id="board">
+    <div class="topbar">
+      <span>現在ターン: <span id="turnInfo" class="pill"></span></span>
+      <span>フェーズ: <span id="phaseInfo" class="pill"></span></span>
+      <span>先攻: <span id="firstPlayerInfo" class="pill"></span></span>
+      <button id="startBtn" class="ok" onclick="startGame()">ゲーム開始</button>
+      <button id="restartBtn" onclick="restartGame()">新規ゲーム</button>
+      <button id="endTurnBtn" style="margin-left:auto" class="ok">ターン終了</button>
+    </div>
+
+    <div id="aiArea">
+      <div class="section-title">相手の場（AI） <span id="aiPrizes" class="pill"></span></div>
+      <div class="zone-row">
+        <div class="zone" id="aiActiveZone"><span class="label">バトル場</span></div>
+        <div class="zone" id="aiBench0"><span class="label">ベンチ</span></div>
+        <div class="zone" id="aiBench1"><span class="label">ベンチ</span></div>
+        <div class="zone" id="aiBench2"><span class="label">ベンチ</span></div>
+        <div class="zone" id="aiBench3"><span class="label">ベンチ</span></div>
+        <div class="zone" id="aiBench4"><span class="label">ベンチ</span></div>
+      </div>
+      <div class="split">
+        <div class="board">
+          <div class="section-title">スタジアム</div>
+          <div id="stadiumArea"></div>
+        </div>
+        <div class="board">
+          <div class="section-title">相手のトラッシュ / ロスト</div>
+          <div id="aiDiscard" class="cards"></div>
+          <div id="aiLost" class="cards"></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="dim">
+
+    <div id="playerArea">
+      <div class="section-title">あなたの場（プレイヤー） <span id="playerPrizes" class="pill"></span></div>
+      <div class="zone-row">
+        <div class="zone" id="plActiveZone"><span class="label">バトル場</span></div>
+        <div class="zone" id="plBench0"><span class="label">ベンチ</span></div>
+        <div class="zone" id="plBench1"><span class="label">ベンチ</span></div>
+        <div class="zone" id="plBench2"><span class="label">ベンチ</span></div>
+        <div class="zone" id="plBench3"><span class="label">ベンチ</span></div>
+        <div class="zone" id="plBench4"><span class="label">ベンチ</span></div>
+      </div>
+
+      <div class="split">
+        <div class="board">
+          <div class="section-title">手札 <span id="handCount" class="pill"></span> <span class="hint">（カードをクリックで操作）</span></div>
+          <div id="playerHand" class="cards"></div>
+        </div>
+        <div>
+          <div class="board" style="margin-bottom:8px;">
+            <div class="section-title">山札 <span id="deckCount" class="pill"></span></div>
+            <div class="btn-row"><button id="peekDeckBtn">上から5枚を見る（テスト）</button></div>
+            <div id="peekDeckArea" class="cards"></div>
+          </div>
+          <div class="board">
+            <div class="section-title">自分のトラッシュ / ロスト</div>
+            <div id="playerDiscard" class="cards"></div>
+            <div id="playerLost" class="cards"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="right">
+    <section class="board">
+      <div class="section-title">アクション</div>
+      <div class="btn-row">
+        <button id="attachEnergyBtn">手札からエネルギーをつける（1/ターン）</button>
+        <button id="psychicEmbraceBtn">サイコエンブレイス（超エネ/トラッシュ）</button>
+        <button id="useAbilityBtn">特性を使う（選択中）</button>
+        <button id="attackBtn" class="warn">攻撃する（バトル場）</button>
+        <button id="retreatBtn">にげる（コスト支払い）</button>
+      </div>
+      <div class="hint">弱点×2／抵抗-30（カード定義依存）／ビーチコート：たねのにげるコスト-1。</div>
+      <hr class="dim">
+      <div class="section-title">現在選択中</div>
+      <div id="selectedInfo" class="small">未選択</div>
+    </section>
+
+    <section class="board">
+      <div class="section-title">ログ</div>
+      <div id="log" class="log"></div>
+    </section>
+
+    <section class="board">
+      <div class="section-title">クイックルール（本実装の範囲）</div>
+      <ul class="small">
+        <li>サイド6／ベンチ5／先攻1Tサポ不可・攻撃不可／山札切れ敗北／場が空で敗北。</li>
+        <li>手貼り1/ターン、サイコエンブレイス（トラッシュの基本超を超ポケモンに／ダメカン2/枚／気絶不可チェック）。</li>
+        <li>にげる：指定<b>枚数</b>のエネルギーをトラッシュ（ビーチコートでBasicは-1）。にげるで特殊状態回復。</li>
+        <li>特殊状態：どく(10)/やけど(20+コイン)/まひ(1ターン)/ねむり(終了時コイン)/こんらん(攻撃時コイン失敗で30自傷)。</li>
+      </ul>
+    </section>
+
+    <div class="footer">© Pokémon/Nintendo/Creatures/GAME FREAK — 非公式・学習用。テキスト表示のみ。</div>
+  </aside>
+</main>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <h3 id="modalTitle">選択</h3>
+    <div id="modalContent"></div>
+    <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+      <button id="modalCancel">キャンセル</button>
+      <button id="modalOk" class="ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= 画面エラーハンドラ ========= */
+window.addEventListener('error', function(e){
+  var box = document.getElementById('log'); if(!box) return;
+  var div = document.createElement('div'); div.textContent = 'JSエラー: ' + e.message + ' @' + e.lineno + ':' + e.colno;
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+});
+window.addEventListener('unhandledrejection', function(e){
+  var box = document.getElementById('log'); if(!box) return;
+  var div = document.createElement('div'); div.textContent = '未処理のPromise拒否: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+});
+
+/* ========= [BOOT] 診断 ========= */
+window.addEventListener('DOMContentLoaded', function(){ try{ log("[BOOT] DOMContentLoaded"); }catch(_){} });
+window.addEventListener('load', function(){ try{ log("[BOOT] window.load"); }catch(_){} });
+
+/* ========= ユーティリティ ========= */
+function rnd(n){ return Math.floor(Math.random()*n); }
+function deepCopy(x){ return JSON.parse(JSON.stringify(x)); }
+var NEXT_ID = 1; function uid(){ return (NEXT_ID++).toString(); }
+function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } }
+function $(id){ return document.getElementById(id); }
+function log(msg){ var box=$("log"); if(!box) return; var div=document.createElement("div"); div.textContent=msg; box.appendChild(div); box.scrollTop=box.scrollHeight; }
+
+/* ========= カード定義 ========= */
+var CardDB = {
+  Ralts:{name:"ラルトス", stage:"Basic", type:"P", hp:70, rc:1, wk:"D", wkm:2, rs:"F", rsv:30, attacks:[{name:"サイコショット", cost:2, damage:30}]},
+  Kirlia:{name:"キルリア", stage:"Stage1", evolvesFrom:"ラルトス", type:"P", hp:90, rc:1, wk:"D", wkm:2, rs:"F", rsv:30,
+          abilities:[{id:"refinement", name:"精製", oncePerTurn:true, text:"手札1枚トラッシュ→2枚ドロー"}],
+          attacks:[{name:"ピアース", cost:2, damage:30}]},
+  GardevoirEX:{name:"サーナイトex", ex:true, stage:"Stage2", evolvesFrom:"キルリア", type:"P", hp:310, rc:2, wk:"D", wkm:2,
+               abilities:[{id:"psychic_embrace", name:"サイコエンブレイス", text:"トラッシュの基本超を自分の超ポケモンにつける（ダメカン2/枚、気絶不可）"}],
+               attacks:[{name:"ミラクルフォース", cost:3, damage:190, clearsStatus:true}]},
+  Drifloon:{name:"フワンテ", stage:"Basic", type:"P", hp:70, rc:1, wk:"D", wkm:2, attacks:[{name:"ふくらむバルーン", cost:1, formula:"selfCountersX30"}]},
+  Mashimashira:{name:"マシマシラ", stage:"Basic", type:"D", hp:110, rc:1, wk:"G", wkm:2,
+     abilities:[{id:"adrena_brain", name:"アドレナブレイン", oncePerTurn:true, text:"このポケモンに[悪]エネルギーがついているなら、自分の番に1回。自分の場のポケモン1匹にのっているダメカンを3個まで選び、相手の場のポケモン1匹にのせ替える。"}],
+     attacks:[{name:"サイコトリップ", cost:2, requires:{P:1,C:1}, damage:60, inflict:"CNF"}]
+  },
+  MewEX:{name:"ミュウex", ex:true, stage:"Basic", type:"P", hp:180, rc:1, wk:"D", wkm:2,
+         abilities:[{id:"restart", name:"リスタート(簡易)", oncePerTurn:true, text:"手札が3枚になるまで引く"}],
+         attacks:[{name:"ゲノムハック", cost:1, copyAttack:true},{name:"フォトンキネシス(簡易)", cost:3, damage:90}]},
+  MewTail:{name:"ミュウ（ふしぎなしっぽ）", stage:"Basic", type:"P", hp:70, rc:1, wk:"D", wkm:2,
+           abilities:[{id:"mysterious_tail", name:"ふしぎなしっぽ", oncePerTurn:true, text:"バトル場にいるなら、山札上6枚からグッズ1枚を公開して手札に。残りを山札にもどして切る。"}],
+           attacks:[{name:"サイコショット(簡易)", cost:1, damage:30}]},
+  LillieClefairyEX:{name:"リーリエのピッピex", ex:true, stage:"Basic", type:"Y", hp:190, rc:1,
+     wk:"M", wkm:2,
+     abilities:[{id:"fairy_zone", name:"フェアリーゾーン", text:"このポケモンがいるかぎり、相手の場のポケモン全員の弱点は、すべてフェアリータイプになる（×2）。"}],
+     attacks:[
+       {name:"ゆびをふる", cost:1, copyAttack:true, randomCopy:true},
+       {name:"フルムーンロンド", cost:2, formula:"bench20Plus"}
+     ]
+  },
+  UnknownSlot:{name:"（予備枠）", stage:"Basic", type:"P", hp:70, rc:1, wk:"D", wkm:2, attacks:[{name:"たいあたり(簡易)", cost:1, damage:20}]},
+  BraveryCharm:{name:"いさぎのふんどし", type:"Tool", text:"たねの最大HP+50"},
+  HyperBall:{name:"ハイパーボール", type:"Item", text:"手札2枚トラッシュ→山札からポケモン1枚を手札に"},
+  LevelBall:{name:"レベルボール", type:"Item", text:"HP90以下のポケモン1枚を山札から手札に（公開）"},
+  NestBall:{name:"ネストボール", type:"Item", text:"たねポケモン1枚を山札からベンチに（公開）"},
+  RareCandy:{name:"ふしぎなアメ", type:"Item", text:"たね→2進化（同ターン出したたね不可／先攻1T不可）"},
+  EarthenVessel:{name:"大地の器", type:"Item", text:"手札1枚トラッシュ→基本エネを最大2枚まで手札に"},
+  EscapeRope:{name:"あなぬけのヒモ", type:"Item", text:"おたがいのバトル場を入れ替える（相手から）"},
+  SuperRod:{name:"すごいつりざお", type:"Item", text:"トラッシュのポケモン/基本エネ合計3枚までを山札にもどす"},
+  CounterCatcher:{name:"カウンターキャッチャー", type:"Item", text:"自分のサイドが多いときのみ、相手のベンチを呼ぶ（公開）"},
+  LostSweeper:{name:"ロストスイーパー", type:"Item", text:"手札1枚トラッシュ→場のスタジアム/どうぐを1枚ロストゾーンへ"},
+  Pepper:{name:"ペパー", type:"Supporter", text:"山札からグッズ1枚＋ポケモンのどうぐ1枚を公開して手札へ"},
+  Research:{name:"博士の研究", type:"Supporter", text:"手札をすべてトラッシュ→7枚ドロー"},
+  Iono:{name:"ナンジャモ", type:"Supporter", text:"お互いの手札を山札にもどし、残りサイドぶんドロー"},
+  Boss:{name:"ボスの指令", type:"Supporter", text:"相手のベンチを1体バトル場に（公開）"},
+  Artazon:{name:"ボウルタウン（Artazon）", type:"Stadium", text:"各プレイヤー1回/ターン、RBなしのたねを山札からベンチへ（公開）"},
+  BeachCourt:{name:"ビーチコート", type:"Stadium", text:"おたがいのたねのにげるコスト-1"},
+  BasicPsychic:{name:"基本超エネルギー", type:"Energy", basic:true, provides:1},
+  BasicDarkness:{name:"基本悪エネルギー", type:"Energy", basic:true, provides:1},
+  ReversalEnergy:{name:"リバーサルエネルギー", type:"Energy", special:true, provides:"rev"}
+};
+
+/* ========= デッキリスト（60枚） ========= */
+var DeckList = [
+  ["Ralts",3],["Kirlia",3],["GardevoirEX",2],["Drifloon",1],["Mashimashira",3],["MewEX",1],["MewTail",1],["LillieClefairyEX",1],
+  ["HyperBall",4],["LevelBall",3],["NestBall",1],["RareCandy",2],["EarthenVessel",3],["EscapeRope",2],["SuperRod",2],["CounterCatcher",2],["LostSweeper",1],
+  ["Pepper",4],["Research",2],["Iono",3],["Boss",1],
+  ["Artazon",3],["BeachCourt",2],
+  ["BasicPsychic",7],["ReversalEnergy",3]
+];
+
+/* ========= デッキ展開（堅牢化） ========= */
+function expandDeckFromDeckList(){
+  try{
+    var deck = [];
+    for (var i=0;i<DeckList.length;i++){
+      var code = DeckList[i][0], n = DeckList[i][1];
+      if (!CardDB[code]){ log("[BOOT] 未知のカードコード: "+code); return null; }
+      if (typeof n!=="number" || n<=0 || n>60){ log("[BOOT] 異常な枚数: "+code+" x"+n); return null; }
+      for (var k=0;k<n;k++){ deck.push(code); }
+    }
+    if (!deck || deck.length !== 60){
+      log("[BOOT] DeckList合計が60ではありません: "+(deck?deck.length:"null"));
+      return null;
+    }
+    return deck;
+  }catch(e){
+    log("[BOOT] expandDeckFromDeckList 例外: "+e);
+    return null;
+  }
+}
+
+/* ========= ゲーム状態 ========= */
+function makeDeck(){
+  var d = expandDeckFromDeckList();
+  if (!d){ throw new RangeError("Invalid DeckList expansion (length!=60)"); }
+  shuffle(d);
+  return d;
+}
+function newPlayer(name){
+  return { name:name, deck:makeDeck(), hand:[], discard:[], lost:[], prizes:[],
+    active:null, bench:[], supporterUsedThisTurn:false, energyAttachedThisTurn:false, stadiumUsedThisTurn:false, attackedThisTurn:false,
+    turnNumber:0, mulligansGiven:0 };
+}
+var State = { players:[/*late*/], current:0, firstPlayer:0, phase:"setup", turnCount:0, winner:null, stadium:null };
+function playerIndexOf(pl){ return State.players[0]===pl?0:1; }
+
+/* ========= ポケモン生成 ========= */
+function spawnPokemon(code, owner){
+  var c = CardDB[code]; if (!c || !c.stage) return null;
+  var p = { iid:uid(), owner:owner, code:code, name:c.name, stage:c.stage, type:c.type,
+            baseHP:c.hp||0, maxHP:c.hp||0, damage:0,
+            wk:c.wk||null, wkm:c.wkm||2, rs:c.rs||null, rsv:c.rsv||30, rc:c.rc||1,
+            energies:[], tool:null,
+            status:{psn:false, brn:false, par:false, slp:false, cnf:false, parOwner:null, parTurns:0},
+            turnsInPlay:0, wasPlayedThisTurn:true, abilityFlags:{} };
+  return p;
+}
+
+/* ========= 基本処理 ========= */
+function draw(pl, n){
+  for (var i=0;i<n;i++){
+    if(pl.deck.length===0){ log(pl.name+" は山札切れで敗北！"); State.winner = playerIndexOf(pl)===0?1:0; render(); return false; }
+    pl.hand.push(pl.deck.pop());
+  }
+  return true;
+}
+function revealPrizes(pl){ for (var i=0;i<6;i++) pl.prizes.push(pl.deck.pop()); }
+function hasBasicInHand(pl){ for (var i=0;i<pl.hand.length;i++){ var c=pl.hand[i]; if (CardDB[c] && CardDB[c].stage==="Basic") return true; } return false; }
+function autoSelectOpening(pl){
+  var order=["Ralts","MewTail","Drifloon","Mashimashira","MewEX","LillieClefairyEX"];
+  for (var oi=0;oi<order.length;oi++){ var key=order[oi]; var idx=pl.hand.indexOf(key); if(idx>=0){ var code=pl.hand.splice(idx,1)[0]; pl.active=spawnPokemon(code, playerIndexOf(pl)); return true; } }
+  for (var i=0;i<pl.hand.length;i++){ var c=pl.hand[i]; if (CardDB[c] && CardDB[c].stage==="Basic"){ var code2=pl.hand.splice(i,1)[0]; pl.active=spawnPokemon(code2, playerIndexOf(pl)); return true; } }
+  return false;
+}
+function benchFromHand(pl, code){
+  if (pl.bench.length>=5){ log("ベンチがいっぱい。"); return false; }
+  var i=pl.hand.indexOf(code); if (i<0) return false;
+  var p = spawnPokemon(pl.hand.splice(i,1)[0], playerIndexOf(pl)); pl.bench.push(p); return true;
+}
+function allPokemons(pl){ var arr=[]; if(pl.active) arr.push(pl.active); return arr.concat(pl.bench); }
+function findByIid(pl, iid){ if(pl.active && pl.active.iid===iid) return pl.active; for (var i=0;i<pl.bench.length;i++){ if(pl.bench[i].iid===iid) return pl.bench[i]; } return null; }
+
+/* ========= 進化 ========= */
+function evolve(pl, target, evoCode, viaCandy){
+  viaCandy = !!viaCandy;
+  var base = CardDB[target.code], evo = CardDB[evoCode];
+  if(!evo || !evo.stage || (evo.stage!=="Stage1" && evo.stage!=="Stage2")) return false;
+  if (!viaCandy){
+    if (evo.evolvesFrom !== base.name) return false;
+  } else {
+    if (!(base.stage==="Basic" && evo.stage==="Stage2")) return false;
+    var ok=false;
+    for (var key in CardDB){ var c=CardDB[key]; if (c && c.stage==="Stage1" && c.evolvesFrom===base.name && evo.evolvesFrom===c.name){ ok=true; break; } }
+    if (!ok) return false;
+  }
+  if (!viaCandy && target.turnsInPlay<=0){ log("出したばかりは進化不可。"); return false; }
+  if (viaCandy){
+    if (target.wasPlayedThisTurn){ log("このターンに出したたねには《ふしぎなアメ》不可。"); return false; }
+    if (State.current===State.firstPlayer && State.turnCount===1){ log("先攻1Tは《ふしぎなアメ》不可。"); return false; }
+  }
+  var newP = spawnPokemon(evoCode, target.owner);
+  newP.damage = target.damage; newP.energies = target.energies; newP.tool = target.tool;
+  newP.turnsInPlay = target.turnsInPlay; newP.wasPlayedThisTurn=false;
+  newP.status = {psn:false, brn:false, par:false, slp:false, cnf:false, parOwner:null, parTurns:0};
+  if (State.players[target.owner].active && State.players[target.owner].active.iid===target.iid) State.players[target.owner].active = newP;
+  for (var i=0;i<State.players[target.owner].bench.length;i++){ if(State.players[target.owner].bench[i].iid===target.iid) State.players[target.owner].bench[i]=newP; }
+  log(State.players[target.owner].name+": "+target.name+" → "+newP.name+" に進化"+(viaCandy?"（ふしぎなアメ）":""));
+  return true;
+}
+
+/* ========= エネルギー ========= */
+function attachFromHand(pl, target){
+  if (pl.energyAttachedThisTurn){ log("このターンは手貼り済み。"); return false; }
+  if (!target){ log("対象のポケモンを選択してください"); return false; }
+  var idx = -1; for (var i=0;i<pl.hand.length;i++){ var c=pl.hand[i]; if (c==="BasicPsychic" || c==="ReversalEnergy" || c==="BasicDarkness"){ idx=i; break; } }
+  if (idx<0){ log("手札に付けられるエネルギーがありません。"); return false; }
+  var card = pl.hand.splice(idx,1)[0]; target.energies.push(card); pl.energyAttachedThisTurn = true;
+  log(pl.name+": 《"+CardDB[card].name+"》を《"+target.name+"》につけた（手貼り）"); return true;
+}
+function canUsePsychicEmbrace(pl, target){
+  if (!target || CardDB[target.code].type!=="P") return false;
+  var i = pl.discard.lastIndexOf("BasicPsychic"); if (i<0) return false;
+  if (target.damage + 20 >= target.maxHP) return false;
+  return true;
+}
+function doPsychicEmbrace(pl, target){
+  if (!canUsePsychicEmbrace(pl, target)){ log("サイコエンブレイスの条件未達。"); return false; }
+  var i = pl.discard.lastIndexOf("BasicPsychic"); if (i<0) return false;
+  target.energies.push(pl.discard.splice(i,1)[0]); target.damage += 20;
+  log(pl.name+": サイコエンブレイス → 《"+target.name+"》に超エネ+1＆ダメカン20"); return true;
+}
+
+/* ========= 特性（useAbility 実装） ========= */
+function useAbility(pl, p){
+  if (!p){ log("対象のポケモンを選択してください"); return; }
+  var card = CardDB[p.code]; if (!card || !card.abilities || card.abilities.length===0){ log("このポケモンに使える特性はありません"); return; }
+
+  // 汎用 once-per-turn チェック（ポケモン個体ごと）
+  function markUsed(id){ p.abilityFlags[id] = true; }
+  function isUsed(id){ return !!p.abilityFlags[id]; }
+
+  // マシマシラ：アドレナブレイン
+  if (p.code==="Mashimashira"){
+    var ab = card.abilities.find(function(a){ return a.id==="adrena_brain"; });
+    if (!ab){ log("特性が見つかりません"); return; }
+    if (isUsed(ab.id)){ log("このターンは《アドレナブレイン》をすでに使用しました"); return; }
+    // 条件：このポケモンに[悪]エネルギーがついている
+    if (!energyProvidesTypeFor(p, 'D')){ log("《アドレナブレイン》：このポケモンに悪エネルギーが付いていません"); return; }
+    var me = pl, opp = State.players[1-playerIndexOf(pl)];
+    var srcs = allPokemons(me).filter(function(pp){ return pp.damage>=10; });
+    var tgts = allPokemons(opp);
+    if (srcs.length===0){ log("→ 自分の場にダメカンがあるポケモンがいません"); return; }
+    if (tgts.length===0){ log("→ 相手の場にポケモンがいません"); return; }
+
+    openSelectModal("アドレナブレイン：移動元（自分の場）を選択", srcs.map(function(pp){ return {label:pp.name+"（"+(pp.damage/10)+"個）", value:pp.iid}; }), function(srcIid){
+      if(!srcIid){ log("選択がありません"); return; }
+      var src = findByIid(me, srcIid); if (!src) return;
+      var max = Math.min(30, src.damage);
+      var amounts=[]; for (var v=10; v<=max; v+=10) amounts.push({label:(v/10)+"個", value:v});
+      if (amounts.length===0){ log("→ 移動できるダメカンがありません"); return; }
+      openSelectModal("移動するダメカンの数", amounts, function(valAmt){
+        if (!valAmt){ log("選択がありません"); return; }
+        openSelectModal("移動先（相手の場）を選択", tgts.map(function(tp){ return {label:tp.name+"（"+(tp.damage/10)+"個）", value:tp.iid}; }), function(tgtIid){
+          if (!tgtIid){ log("選択がありません"); return; }
+          var tgt = findByIid(opp, tgtIid); if (!tgt) return;
+          src.damage -= valAmt; tgt.damage += valAmt;
+          log(me.name+": 《アドレナブレイン》 → 《"+src.name+"》のダメカン"+(valAmt/10)+"個 を 相手の《"+tgt.name+"》へ移動");
+          markUsed(ab.id); checkKOAndPrizes(); render();
+        }, true);
+      }, true);
+    }, true);
+    return;
+  }
+
+  // ミュウ（ふしぎなしっぽ）：バトル場限定、上6枚からグッズ1枚を公開して手札に
+  if (p.code==="MewTail"){
+    var ab2 = card.abilities.find(function(a){ return a.id==="mysterious_tail"; });
+    if (!ab2){ log("特性が見つかりません"); return; }
+    if (isUsed(ab2.id)){ log("このターンは《ふしぎなしっぽ》をすでに使用しました"); return; }
+    if (!(pl.active && pl.active.iid===p.iid)){ log("《ふしぎなしっぽ》はバトル場にいるときのみ使用できます"); return; }
+    var count = Math.min(6, pl.deck.length);
+    if (count<=0){ log("山札が残っていません"); return; }
+    var top = []; for (var i=pl.deck.length-count;i<pl.deck.length;i++){ top.push({code:pl.deck[i], idx:i}); }
+    var items = top.filter(function(e){ return CardDB[e.code] && CardDB[e.code].type==="Item"; });
+    if (items.length===0){
+      log("《ふしぎなしっぽ》：上"+count+"枚にグッズなし → 山札を切り直し");
+      shuffle(pl.deck); markUsed(ab2.id); render(); return;
+    }
+    openSelectModal("ふしぎなしっぽ：上"+count+"枚からグッズ1枚（公開）", items.map(function(it){ return {label:CardDB[it.code].name, value:it.idx}; }), function(pickIdx){
+      if (pickIdx==null){ log("選択がありません"); return; }
+      var take = pl.deck.splice(pickIdx,1)[0]; pl.hand.push(take);
+      log("→ 公開：《"+CardDB[take].name+"》を手札に／残りを山札にもどして切る");
+      shuffle(pl.deck); markUsed(ab2.id); render();
+    }, true);
+    return;
+  }
+
+  // サーナイトexの特性は専用ボタンで処理
+  if (p.code==="GardevoirEX"){ log("《サイコエンブレイス》は右の専用ボタンから使用してください"); return; }
+
+  // 既定（未実装）
+  log("このポケモンの特性は未実装です");
+}
+
+/* ========= エネルギー型ユーティリティ ========= */
+function energyProvidesTypeFor(p, typeCode){
+  for (var i=0;i<p.energies.length;i++){
+    var e = p.energies[i];
+    if (e==="BasicPsychic" && typeCode==='P') return true;
+    if (e==="BasicDarkness" && typeCode==='D') return true;
+    if (e==="ReversalEnergy"){
+      var me = State.players[p.owner], opp = State.players[1-p.owner];
+      var behind = me.prizes.length > opp.prizes.length;
+      var evo = (p.stage==="Stage1"||p.stage==="Stage2") && !CardDB[p.code].ex;
+      if (behind && evo) return true; // 任意タイプ可（条件下）
+    }
+  }
+  return false;
+}
+function energyUnitsByType(p){
+  var typedP = 0;
+  var total = 0;
+  for (var i=0;i<p.energies.length;i++){
+    var e = p.energies[i];
+    if (e==="BasicPsychic"){ typedP += 1; total += 1; }
+    else if (e==="BasicDarkness"){ total += 1; }
+    else if (e==="ReversalEnergy"){
+      var me = State.players[p.owner], opp = State.players[1-p.owner];
+      var behind = me.prizes.length > opp.prizes.length;
+      var evo = (p.stage==="Stage1"||p.stage==="Stage2") && !CardDB[p.code].ex;
+      total += (behind && evo)? 3 : 1;
+    } else { total += 1; }
+  }
+  return {P:typedP, total:total};
+}
+function providedEnergyUnits(pl, p){
+  var units = 0;
+  for (var i=0;i<p.energies.length;i++){
+    var e = p.energies[i];
+    if (e==="BasicPsychic") units += 1;
+    else if (e==="BasicDarkness") units += 1;
+    else if (e==="ReversalEnergy"){
+      var me = State.players[p.owner], opp = State.players[1-p.owner];
+      var behind = me.prizes.length > opp.prizes.length;
+      var evo = (p.stage==="Stage1"||p.stage==="Stage2") && !CardDB[p.code].ex;
+      units += (behind && evo)? 3 : 1;
+    }
+  }
+  return units;
+}
+function attackCostSatisfied(pl, p, atkData){
+  var need = atkData.cost || 0;
+  if (!atkData.requires){
+    return providedEnergyUnits(pl, p) >= need;
+  }
+  var units = energyUnitsByType(p);
+  var needP = atkData.requires.P || 0;
+  var needC = atkData.requires.C || 0;
+  if (units.P < needP) return false;
+  var total = units.total;
+  var usedForP = needP;
+  var remain = total - usedForP;
+  return remain >= needC;
+}
+
+/* ========= 退避（にげる） ========= */
+function stadiumBeachReduction(p){ return (State.stadium==="BeachCourt" && p.stage==="Basic")? 1:0; }
+function retreat(pl){
+  if (!pl.active || pl.bench.length===0){ log("にげられません。"); return; }
+  var cost = Math.max(0, (CardDB[pl.active.code].rc||1) - stadiumBeachReduction(pl.active));
+  var have = pl.active.energies.length;
+  if (have < cost){ log("にげるコスト不足（必要"+cost+" / 付いている"+have+"）"); return; }
+  for (var i=0;i<cost;i++){ var e = pl.active.energies.shift(); pl.discard.push(e); }
+  openSelectModal("にげる先（ベンチ）を選択", pl.bench.map(function(b){ return {label:b.name, value:b.iid}; }), function(iid){
+    if(!iid){ log("交代先が選ばれていません"); return; }
+    var idx = -1; for (var j=0;j<pl.bench.length;j++){ if(pl.bench[j].iid===iid){ idx=j; break; } }
+    if (idx<0) return;
+    var next = pl.bench.splice(idx,1)[0]; var prev = pl.active;
+    prev.status = {psn:false, brn:false, par:false, slp:false, cnf:false, parOwner:null, parTurns:0};
+    pl.active = next; pl.bench.unshift(prev);
+    log(pl.name+": にげる → バトル場は《"+pl.active.name+"》"); render();
+  }, true);
+}
+
+/* ========= ダメージ計算（弱点/抵抗） ========= */
+function hasFairyZoneFor(attackerOwner){
+  var pl = State.players[attackerOwner];
+  function hasLillie(p){ return p && p.code==="LillieClefairyEX"; }
+  if (hasLillie(pl.active)) return true;
+  for (var i=0;i<pl.bench.length;i++){ if (hasLillie(pl.bench[i])) return true; }
+  return false;
+}
+function applyWeakRes(attacker, defender, base){
+  var dmg = base;
+  var atkType = CardDB[attacker.code].type;
+  var defWk = defender.wk;
+  if (hasFairyZoneFor(attacker.owner)) { defWk = 'Y'; }
+  if (defWk && defWk===atkType) dmg *= defender.wkm || 2;
+  if (defender.rs && defender.rs===atkType) dmg = Math.max(0, dmg - (defender.rsv||30));
+  return Math.floor(dmg);
+}
+
+/* ========= 特殊状態 ========= */
+function statusIcons(p){
+  var arr=[];
+  if (p.status.psn) arr.push('<span class="st psn">PSN</span>');
+  if (p.status.brn) arr.push('<span class="st brn">BRN</span>');
+  if (p.status.par) arr.push('<span class="st par">PAR</span>');
+  if (p.status.slp) arr.push('<span class="st slp">SLP</span>');
+  if (p.status.cnf) arr.push('<span class="st cnf">CNF</span>');
+  return arr.join(" ");
+}
+function betweenTurnsEffects(){
+  var actives = [State.players[0].active, State.players[1].active];
+  for (var ai=0; ai<actives.length; ai++){
+    var p = actives[ai]; if (!p) continue;
+    if (p.status.psn){ p.damage += 10; log(p.name+": どくで10ダメージ（"+p.damage+"/"+p.maxHP+"）"); }
+    if (p.status.brn){
+      p.damage += 20;
+      var heads = Math.random()<0.5? false:true;
+      if (heads){ p.status.brn=false; log(p.name+": やけどコイン オモテ → 回復"); }
+      else { log(p.name+": やけどコイン ウラ → 継続"); }
+    }
+  }
+  for (var idx=0; idx<2; idx++){
+    var justEnded = (idx===State.current);
+    var pp = State.players[idx].active; if (!pp) continue;
+    if (pp.status.slp && justEnded){
+      var heads2 = Math.random()<0.5? true:false;
+      if (heads2){ pp.status.slp=false; log(State.players[idx].name+" の《"+pp.name+"》は ねむり から目覚めた"); }
+      else { log(State.players[idx].name+" の《"+pp.name+"》は ねむり 継続"); }
+    }
+    if (pp.status.par && pp.status.parOwner===idx && justEnded){
+      pp.status.parTurns--; if (pp.status.parTurns<=0){ pp.status.par=false; pp.status.parOwner=null; log(pp.name+": まひ 回復"); }
+    }
+  }
+}
+
+/* ========= 攻撃 ========= */
+function canAttack(pl){
+  if (!pl.active) return false;
+  if (pl.attackedThisTurn) { log('このターンはすでに攻撃しました'); return false; }
+  if (State.current===State.firstPlayer && State.turnCount===1) return false;
+  var st = pl.active.status;
+  if (st.par){ log("まひ：攻撃できない"); return false; }
+  if (st.slp){ log("ねむり：攻撃できない"); return false; }
+  var a = pl.active, code=a.code;
+  var atk = CardDB[code] && CardDB[code].attacks && CardDB[code].attacks[0];
+  if (!atk) return false;
+  return attackCostSatisfied(pl, a, atk);
+}
+function computeAttackDamage(atkData, atkP, defP){
+  if (!atkData) return 0;
+  if (atkData.formula==="selfCountersX30"){ var cnt = Math.floor(atkP.damage/10); return cnt*30; }
+  if (atkData.formula==="bench20Plus"){ var total = State.players[0].bench.length + State.players[1].bench.length; return 20 + total*20; }
+  return atkData.damage||0;
+}
+function performAttack(attackerPL, defenderPL){
+  attackerPL.attackedThisTurn = true;
+  var atkP = attackerPL.active, defP = defenderPL.active;
+  if (!atkP || !defP) return;
+  var atkCard = CardDB[atkP.code];
+  var atkd = atkCard.attacks && atkCard.attacks[0];
+  if (!atkd){ log("攻撃ワザが未定義。"); return; }
+  if (atkP.status.cnf){
+    var heads = Math.random()<0.5;
+    if (!heads){ atkP.damage += 30; log(attackerPL.name+" の《"+atkP.name+"》は こんらん で自傷30（"+atkP.damage+"/"+atkP.maxHP+"）。攻撃失敗。"); checkKOAndPrizes(); render(); return; }
+    else { log("こんらん：コイン オモテ → 攻撃成功"); }
+  }
+  if (atkd.copyAttack){
+    var oppAttacks = CardDB[defP.code].attacks||[];
+    if (oppAttacks.length===0){ log("コピー元のワザがありません"); return; }
+    if (atkd.randomCopy){
+      var idx = Math.floor(Math.random()*oppAttacks.length);
+      var copied = oppAttacks[idx];
+      var base = computeAttackDamage(copied, atkP, defP);
+      if (copied.clearsStatus){ atkP.status = {psn:false, brn:false, par:false, slp:false, cnf:false, parOwner:null, parTurns:0}; log("コピー技効果："+atkP.name+" の特殊状態を回復"); }
+      var dmg = applyWeakRes(atkP, defP, base);
+      defP.damage += dmg;
+      log(attackerPL.name+": 《"+atkd.name+"→"+copied.name+"（ランダム）》で "+defenderPL.name+" の《"+defP.name+"》に "+dmg+" ダメージ（"+defP.damage+"/"+defP.maxHP+"）");
+      checkKOAndPrizes(); render();
+      return;
+    } else {
+      openSelectModal("コピーする相手のワザを選択", oppAttacks.map(function(a,i){ return {label:(a.name+(a.damage? " / "+a.damage+"ダメージ": "")), value:i}; }), function(idx){
+        if (idx==null){ log("選択がありません"); return; }
+        var copied = oppAttacks[idx];
+        var base = computeAttackDamage(copied, atkP, defP);
+        if (copied.clearsStatus){ atkP.status = {psn:false, brn:false, par:false, slp:false, cnf:false, parOwner:null, parTurns:0}; log("コピー技効果："+atkP.name+" の特殊状態を回復"); }
+        var dmg = applyWeakRes(atkP, defP, base);
+        defP.damage += dmg;
+        log(attackerPL.name+": 《ゲノムハック→"+copied.name+"》で "+defenderPL.name+" の《"+defP.name+"》に "+dmg+" ダメージ（"+defP.damage+"/"+defP.maxHP+"）");
+        checkKOAndPrizes(); render();
+      }, true);
+      return;
+    }
+  }
+  if (atkd.clearsStatus){ atkP.status = {psn:false, brn:false, par:false, slp:false, cnf:false, parOwner:null, parTurns:0}; log("《"+atkd.name+"》："+atkP.name+" の特殊状態をすべて回復"); }
+  var base2 = computeAttackDamage(atkd, atkP, defP);
+  var dmg2 = applyWeakRes(atkP, defP, base2);
+  defP.damage += dmg2;
+  if (atkd.inflict==="CNF") { defP.status.cnf=true; log("→ 追加効果：こんらん"); }
+  log(attackerPL.name+": 《"+atkd.name+"》 → "+defenderPL.name+" の《"+defP.name+"》に "+dmg2+" ダメージ（"+defP.damage+"/"+defP.maxHP+"）");
+  checkKOAndPrizes(); render();
+}
+function checkKOAndPrizes(){
+  for(var i=0;i<2;i++){
+    var pl=State.players[i], opp=State.players[1-i]; var a = opp.active;
+    if (a && a.damage>=a.maxHP){
+      var prize = (CardDB[a.code].ex?2: (CardDB[a.code].V?2:1));
+      opp.discard.push(a.code); for (var e=0; e<a.energies.length; e++) opp.discard.push(a.energies[e]); if(a.tool) opp.discard.push(a.tool);
+      opp.active=null;
+      log(opp.name+" の《"+a.name+"》がきぜつ → "+pl.name+" がサイド"+prize+"枚獲得");
+      takePrizes(pl, prize);
+      if (pl.prizes.length===0){ State.winner=i; log("★ "+pl.name+" のサイド0 → 勝利！"); return; }
+      if (opp.bench.length>0){ opp.active = opp.bench.shift(); log(opp.name+": ベンチから《"+opp.active.name+"》を前へ"); }
+      else { State.winner=i; log("★ "+opp.name+" の場にポケモンがいない → "+pl.name+" の勝利！"); return; }
+    }
+  }
+}
+function takePrizes(pl, n){ for(var i=0;i<n;i++){ if(pl.prizes.length>0){ pl.hand.push(pl.prizes.pop()); } } }
+
+/* ========= どうぐ装備・スタジアム ========= */
+function attachToolFromHand(pl, toolCode){
+  if (!pl.active && pl.bench.length===0){ log("装備先がいません"); return; }
+  openSelectModal("どうぐを付けるポケモンを選択", allPokemons(pl).map(function(p){ return {label: p.name + (p.tool? "（装備中:"+CardDB[p.tool].name+"）":""), value:p.iid}; }), function(iid){
+    if(!iid){ log("装備先が選ばれていません"); return; }
+    var tIndex = pl.hand.indexOf(toolCode); if (tIndex<0){ log("手札に対象どうぐがありません"); return; }
+    var target = findByIid(pl, iid); if(!target) return;
+    if (CardDB[toolCode].name==="いさぎのふんどし" && target.stage==="Basic"){ target.maxHP += 50; }
+    if (target.tool){ pl.discard.push(target.tool); log("既存のどうぐ《"+CardDB[target.tool].name+"》はトラッシュへ"); }
+    target.tool = toolCode; pl.hand.splice(tIndex,1);
+    log(pl.name+": どうぐ《"+CardDB[toolCode].name+"》を《"+target.name+"》に付けた"); render();
+  }, true);
+}
+function playStadium(pl, code){
+  State.stadium = code; State.players[0].stadiumUsedThisTurn=false; State.players[1].stadiumUsedThisTurn=false;
+  log(pl.name+": スタジアム《"+CardDB[code].name+"》を場に出した");
+}
+function stadiumUse(pl){
+  if (!State.stadium) return;
+  if (State.stadium==="Artazon"){
+    if (pl.stadiumUsedThisTurn){ log("このターンはすでに使用済み"); return; }
+    var basics = pl.deck.filter(function(c){ return CardDB[c] && CardDB[c].stage==="Basic" && !CardDB[c].ruleBox; });
+    if (basics.length===0){ log("→ 対象なし"); return; }
+    if (pl.bench.length>=5){ log("→ ベンチがいっぱい"); return; }
+    openSelectModal("ボウルタウン：RBなしのたねをベンチに（公開）", basics.map(function(c){ return {label:CardDB[c].name, value:c}; }), function(pick){
+      if(!pick){ log("選択がありません"); return; }
+      var k=pl.deck.indexOf(pick); if (k>=0){ var p=spawnPokemon(pl.deck.splice(k,1)[0], playerIndexOf(pl)); pl.bench.push(p); pl.stadiumUsedThisTurn=true; shuffle(pl.deck); log("→ 公開：《"+CardDB[pick].name+"》をベンチへ"); render(); }
+    }, true);
+  } else if (State.stadium==="BeachCourt"){ log("ビーチコートは常時効果（たねのにげるコスト-1）"); }
+}
+
+/* ========= トレーナーズ ========= */
+function playSupporter(pl, code){
+  if (pl.supporterUsedThisTurn){ log("このターンはサポート済み"); return; }
+  if (State.current===State.firstPlayer && State.turnCount===1){ log("先攻1Tはサポート不可"); return; }
+  var i=pl.hand.indexOf(code); if(i<0) return;
+  pl.hand.splice(i,1); pl.discard.push(code); pl.supporterUsedThisTurn=true;
+  var name = CardDB[code].name;
+  log(pl.name+": サポート《"+name+"》");
+  if (code==="Iono"){
+    var a=State.players[0], b=State.players[1]; var aN=a.prizes.length, bN=b.prizes.length;
+    a.deck = a.hand.reverse().concat(a.deck); a.hand=[]; b.deck = b.hand.reverse().concat(b.deck); b.hand=[];
+    shuffle(a.deck); shuffle(b.deck); draw(a, aN); draw(b, bN);
+    log("→ ナンジャモ：あなた"+aN+" / AI"+bN+" 枚ドロー");
+  } else if (code==="Research"){
+    var n=pl.hand.length; pl.discard = pl.discard.concat(pl.hand.splice(0)); draw(pl,7); log("→ 博士：手札"+n+" → 全トラッシュ／7枚ドロー");
+  } else if (code==="Boss"){
+    var opp= State.players[1-playerIndexOf(pl)];
+    if (opp.bench.length===0){ log("→ 相手のベンチなし"); return; }
+    openSelectModal("相手ベンチを前へ（公開）", opp.bench.map(function(p){ return {label:p.name, value:p.iid}; }), function(iid){
+      if(!iid){ log("選択がありません"); return; }
+      var idx = -1; for (var j=0;j<opp.bench.length;j++){ if(opp.bench[j].iid===iid){ idx=j; break; } }
+      if (idx>=0){ var tmp=opp.active; opp.active=opp.bench.splice(idx,1)[0]; if(tmp) opp.bench.unshift(tmp); log("→ ボス：呼び出し完了"); render(); }
+    }, true);
+  } else if (code==="Pepper"){
+    var items = pl.deck.filter(function(c){ return CardDB[c] && CardDB[c].type==="Item"; });
+    var tools = pl.deck.filter(function(c){ return CardDB[c] && CardDB[c].type==="Tool"; });
+    var options = { item:null, tool:null };
+    var content = document.createElement("div"); content.className="flex";
+    var col1 = document.createElement("div"); col1.className="col"; col1.innerHTML = "<div class='small'>グッズを1枚選択（必須）</div>";
+    var col2 = document.createElement("div"); col2.className="col"; col2.innerHTML = "<div class='small'>ポケモンのどうぐを1枚選択（山札に無ければスキップ可）</div>";
+    var list1 = document.createElement("div"); var list2 = document.createElement("div");
+    function makeChoice(listEl, arr, onPick, preselect){
+      for (var x=0;x<arr.length;x++){
+        (function(idx){
+          var code = arr[idx];
+          var a = document.createElement("span"); a.className="choice"+(idx===0&&preselect?" selected":""); a.textContent = CardDB[code].name;
+          if (idx===0 && preselect) onPick(code, a);
+          a.onclick=function(){ var kids=listEl.children; for(var m=0;m<kids.length;m++){ kids[m].classList.remove("selected"); } a.classList.add("selected"); onPick(code, a); };
+          listEl.appendChild(a);
+        })(x);
+      }
+      if (arr.length===0){ var d=document.createElement("div"); d.className="small"; d.textContent="（山札に該当カードなし）"; listEl.appendChild(d); }
+    }
+    makeChoice(list1, items, function(code,el){ options.item=code; }, true);
+    makeChoice(list2, tools, function(code,el){ options.tool=code; }, tools.length>0);
+    col1.appendChild(list1); col2.appendChild(list2); content.appendChild(col1); content.appendChild(col2);
+    openCustomModal("ペパー：グッズ1＋どうぐ1を公開して手札へ", content, function(){
+      if (!options.item){ log("→ グッズが選ばれていません"); return; }
+      var i1 = pl.deck.indexOf(options.item); if (i1>=0){ pl.hand.push(pl.deck.splice(i1,1)[0]); }
+      var pickedTool = null;
+      if (options.tool){ var i2 = pl.deck.indexOf(options.tool); if (i2>=0){ pickedTool = pl.deck.splice(i2,1)[0]; pl.hand.push(pickedTool); } }
+      shuffle(pl.deck);
+      log("→ 公開：グッズ《"+CardDB[options.item].name+"》"+(pickedTool? " ＋ どうぐ《"+CardDB[pickedTool].name+"》":"（どうぐ該当なし）")+" を手札に");
+      render();
+    });
+  }
+}
+function playItem(pl, code){
+  var i=pl.hand.indexOf(code); if(i<0) return;
+  pl.hand.splice(i,1); pl.discard.push(code); log(pl.name+": グッズ《"+CardDB[code].name+"》");
+  if (code==="NestBall"){
+    var basics = pl.deck.filter(function(c){ return CardDB[c] && CardDB[c].stage==="Basic"; }); if (basics.length===0){ log("→ 対象なし"); return; }
+    if (pl.bench.length>=5){ log("→ ベンチがいっぱい"); return; }
+    openSelectModal("ベンチに出す たね を選択（公開）", basics.map(function(c){ return {label:CardDB[c].name, value:c}; }), function(pick){
+      if(!pick){ log("選択がありません"); return; }
+      var k = pl.deck.indexOf(pick); if (k>=0){ var p=spawnPokemon(pl.deck.splice(k,1)[0], playerIndexOf(pl)); pl.bench.push(p); log("→ 公開：《"+CardDB[pick].name+"》をベンチへ"); render(); }
+    }, true);
+  }
+  else if (code==="LevelBall"){
+    var cand = pl.deck.filter(function(c){ return (CardDB[c] && CardDB[c].stage && (CardDB[c].hp||0)<=90); }); if (cand.length===0){ log("→ 対象なし"); return; }
+    openSelectModal("HP90以下のポケモンを手札に（公開）", cand.map(function(c){ return {label:(CardDB[c].name+"（HP"+CardDB[c].hp+"）"), value:c}; }), function(pick){
+      if(!pick){ log("→ 何も選ばれていません（OKの前に1つ選んでください）"); return; }
+      var k = pl.deck.indexOf(pick); if (k>=0){ pl.hand.push(pl.deck.splice(k,1)[0]); shuffle(pl.deck); log("→ 公開：《"+CardDB[pick].name+"》を手札に"); render(); }
+    }, true);
+  }
+  else if (code==="HyperBall"){
+    openMultiSelectModal("手札から2枚トラッシュ（コスト）", pl.hand.map(function(c){ return {label:cardLabel(c), value:c}; }), 2, function(trash){
+      if (!trash || trash.length!==2){ log("→ 2枚選択してください"); return; }
+      for (var t=0;t<trash.length;t++){ var c=trash[t]; var k=pl.hand.indexOf(c); if (k>=0) pl.discard.push(pl.hand.splice(k,1)[0]); }
+      var pokes = pl.deck.filter(function(c){ return CardDB[c] && CardDB[c].stage; });
+      if (pokes.length===0){ log("→ 山札にポケモンなし"); return; }
+      openSelectModal("山札からポケモン1枚（公開）", pokes.map(function(c){ return {label:cardLabel(c), value:c}; }), function(pick){
+        if(!pick){ log("選択がありません"); return; }
+        var k = pl.deck.indexOf(pick);
+        if (k>=0){ pl.hand.push(pl.deck.splice(k,1)[0]); shuffle(pl.deck); log("→ 公開：《"+CardDB[pick].name+"》を手札に"); render(); }
+      }, true);
+    });
+  }
+  else if (code==="RareCandy"){
+    var basics = allPokemons(pl).filter(function(p){ return p.stage==="Basic"; });
+    var valid = basics.filter(function(p){
+      var base = CardDB[p.code];
+      return pl.hand.indexOf("GardevoirEX")>=0 && (base.name==="ラルトス");
+    });
+    if (valid.length===0){ log("→ 場に有効な たね（ラルトス）がいない、または手札にサーナイトexがありません"); return; }
+    openSelectModal("進化させる たね を選択（ラルトス）", valid.map(function(p){ return {label:p.name, value:p.iid}; }), function(iid){
+      if(!iid){ log("選択がありません"); return; }
+      var t = findByIid(pl, iid); if (!t) return;
+      if (t.wasPlayedThisTurn){ log("→ このターンに出した たね には使えません"); return; }
+      if (State.current===State.firstPlayer && State.turnCount===1){ log("→ 先攻1ターン目は使えません"); return; }
+      if (evolve(pl, t, "GardevoirEX", true)){ var idx=pl.hand.indexOf("GardevoirEX"); if (idx>=0) pl.hand.splice(idx,1); render(); }
+      else { log("→ 進化に失敗（対応する系統ではありません）"); }
+    }, true);
+  }
+  else if (code==="EarthenVessel"){
+    if (pl.hand.length===0){ log("→ 手札がありません"); return; }
+    openSelectModal("手札から1枚トラッシュ（コスト）", pl.hand.map(function(c){ return {label:cardLabel(c), value:c}; }), function(cid){
+      if(!cid){ log("選択がありません"); return; }
+      var k=pl.hand.indexOf(cid); if (k>=0) pl.discard.push(pl.hand.splice(k,1)[0]);
+      var pool = []; for (var ii=0; ii<pl.deck.length && pool.length<2; ii++){ if (pl.deck[ii]==="BasicPsychic") pool.push("BasicPsychic"); }
+      for(var j=0;j<pool.length;j++){ var iidx=pl.deck.indexOf("BasicPsychic"); if(iidx>=0){ pl.hand.push(pl.deck.splice(iidx,1)[0]); } }
+      shuffle(pl.deck); log("→ 基本超エネルギー "+pool.length+"枚 を手札に"); render();
+    }, true);
+  }
+  else if (code==="EscapeRope"){
+    var opp = State.players[1-playerIndexOf(pl)];
+    if (opp.bench.length>0){
+      if (playerIndexOf(pl)===0){
+        var next = opp.bench.shift(); var prev = opp.active; opp.active = next; if(prev) opp.bench.unshift(prev);
+        log("→ あなぬけのヒモ：相手が交代");
+      } else {
+        openSelectModal("相手（あなた）の交代先（先に選びます）", State.players[0].bench.map(function(b){ return {label:b.name, value:b.iid}; }), function(iid){
+          if(!iid){ log("選択がありません"); return; }
+          var idx = -1; for (var j=0;j<State.players[0].bench.length;j++){ if(State.players[0].bench[j].iid===iid){ idx=j; break; } }
+          if (idx>=0){ var nxt=State.players[0].bench.splice(idx,1)[0]; var prev2=State.players[0].active; State.players[0].active=nxt; if(prev2) State.players[0].bench.unshift(prev2); render(); }
+        }, true);
+      }
+    }
+    if (pl.bench.length>0){
+      openSelectModal("自分の交代先を選択", pl.bench.map(function(b){ return {label:b.name, value:b.iid}; }), function(iid){
+        if(!iid){ log("選択がありません"); return; }
+        var idx2 = -1; for (var j2=0;j2<pl.bench.length;j2++){ if(pl.bench[j2].iid===iid){ idx2=j2; break; } }
+        if (idx2>=0){ var nxt2=pl.bench.splice(idx2,1)[0]; var prev3=pl.active; pl.active=nxt2; if(prev3) pl.bench.unshift(prev3); render(); }
+      }, true);
+    }
+  }
+  else if (code==="SuperRod"){
+    var pool = pl.discard.filter(function(c){ return (CardDB[c] && CardDB[c].stage) || c==="BasicPsychic" || c==="BasicDarkness"; });
+    openMultiSelectModal("トラッシュから（最大3枚）山札にもどす", pool.map(function(c){ return {label:cardLabel(c), value:c}; }), 3, function(list){
+      if (!list||list.length===0) return;
+      for(var ii=0;ii<list.length;ii++){ var cc=list[ii]; var kk=pl.discard.indexOf(cc); if(kk>=0){ pl.deck.unshift(pl.discard.splice(kk,1)[0]); } }
+      shuffle(pl.deck); log("→ "+list.length+"枚を山札にもどした"); render();
+    });
+  }
+  else if (code==="CounterCatcher"){
+    var opp2 = State.players[1-playerIndexOf(pl)];
+    if (pl.prizes.length <= opp2.prizes.length){ log("→ サイドが相手より多くないため使えません"); return; }
+    if (opp2.bench.length===0){ log("→ 相手ベンチなし"); return; }
+    openSelectModal("相手ベンチを前へ（公開）", opp2.bench.map(function(p){ return {label:p.name, value:p.iid}; }), function(iid){
+      if(!iid){ log("選択がありません"); return; }
+      var idx3 = -1; for (var j3=0;j3<opp2.bench.length;j3++){ if(opp2.bench[j3].iid===iid){ idx3=j3; break; } }
+      if (idx3>=0){ var tmp=opp2.active; opp2.active=opp2.bench.splice(idx3,1)[0]; if(tmp) opp2.bench.unshift(tmp); log("→ 呼び出し完了"); render(); }
+    }, true);
+  }
+  else if (code==="LostSweeper"){
+    if (pl.hand.length===0){ log("→ コスト支払い用の手札がありません"); return; }
+    openSelectModal("手札から1枚トラッシュ（コスト）", pl.hand.map(function(c){ return {label:cardLabel(c), value:c}; }), function(cid){
+      if(!cid){ log("選択がありません"); return; }
+      var k=pl.hand.indexOf(cid); if (k>=0) pl.discard.push(pl.hand.splice(k,1)[0]);
+      var targets=[];
+      if (State.stadium) targets.push({kind:"Stadium", label:"場のスタジアム《"+CardDB[State.stadium].name+"》", value:"stadium"});
+      for (var pi=0; pi<State.players.length; pi++){
+        var plx=State.players[pi]; var pkms=allPokemons(plx);
+        for (var si=0; si<pkms.length; si++){ var pkm=pkms[si]; if (pkm.tool){ targets.push({kind:"Tool", label:plx.name+"の《"+pkm.name+"》のどうぐ《"+CardDB[pkm.tool].name+"》", value:"tool:"+pi+":"+pkm.iid}); } }
+      }
+      if (targets.length===0){ log("→ 除去できる対象がありません"); return; }
+      openSelectModal("ロストスイーパー：除去対象を選択（ロスト送り）", targets.map(function(t){ return {label:t.label, value:t.value}; }), function(val){
+        if(!val){ log("選択がありません"); return; }
+        if (val==="stadium"){ var stad=State.stadium; State.stadium=null; pl.lost.push(stad); log("→ スタジアム《"+CardDB[stad].name+"》をロストゾーンへ"); }
+        else if (val.indexOf("tool:")===0){
+          var parts=val.split(":"); var oi=parseInt(parts[1]); var iid=parts[2];
+          var oppPl=State.players[oi]; var tar=findByIid(oppPl, iid);
+          if (tar && tar.tool){ var tool=tar.tool; tar.tool=null; oppPl.lost.push(tool); log("→ どうぐ《"+CardDB[tool].name+"》をロストゾーンへ"); }
+        }
+        render();
+      }, true);
+    }, true);
+  }
+}
+
+/* ========= AI（簡易） ========= */
+function aiTurn(){
+  if (State.current!==1 || State.winner!=null) return;
+  var me=State.players[1], you=State.players[0];
+  log("AI: 行動開始");
+  for (var i=0;i<me.hand.length;i++){ var c=me.hand[i]; if (CardDB[c] && CardDB[c].stage==="Basic" && me.bench.length<5){ benchFromHand(me, c); i--; } }
+  for (var b=0;b<me.bench.length;b++){ var p=me.bench[b]; if (p.stage==="Basic" && p.name==="ラルトス" && p.turnsInPlay>0 && me.hand.indexOf("Kirlia")>=0){ evolve(me, p, "Kirlia"); var k=me.hand.indexOf("Kirlia"); if(k>=0) me.hand.splice(k,1); } }
+  var ks = allPokemons(me).filter(function(p){ return p.name==="キルリア" && p.turnsInPlay>0; });
+  for (var t=0;t<ks.length;t++){ if (me.hand.indexOf("GardevoirEX")>=0){ evolve(me, ks[t], "GardevoirEX"); var kk=me.hand.indexOf("GardevoirEX"); if (kk>=0) me.hand.splice(kk,1); break; } }
+  if (!me.energyAttachedThisTurn){ for (var eh=0;eh<me.hand.length;eh++){ if (me.hand[eh]==="BasicPsychic"||me.hand[eh]==="ReversalEnergy"||me.hand[eh]==="BasicDarkness"){ if (me.active){ attachFromHand(me, me.active); break; } } } }
+  if (me.active){
+    var needUnits = (me.active.code==="GardevoirEX")? Math.max(0,3 - providedEnergyUnits(me, me.active)) : (me.active.code==="Drifloon")? Math.max(0,1 - providedEnergyUnits(me, me.active)) : 0;
+    for (var iii=0; iii<needUnits; iii++){ if (!doPsychicEmbrace(me, me.active)) break; }
+  }
+  if (canAttack(me)) performAttack(me, you);
+  render();
+  setTimeout(function(){ if (State.current===1 && !State.winner){ endTurn(); } }, 350);
+}
+
+/* ========= セットアップ・ターン進行 ========= */
+function setup(){
+  try{ log("[BOOT] setup start"); }catch(_){}
+  State.players=[ newPlayer("あなた"), newPlayer("AI") ];
+  for (var p=0;p<2;p++){
+    var pl=State.players[p];
+    try{
+      pl.hand=[]; pl.discard=[]; pl.lost=[]; pl.prizes=[]; pl.active=null; pl.bench=[];
+      pl.supporterUsedThisTurn=false; pl.energyAttachedThisTurn=false; pl.stadiumUsedThisTurn=false; pl.attackedThisTurn=false; pl.turnNumber=0;
+      // deck は newPlayer() で作成済み
+    }catch(e){ log("[BOOT] player init error: "+e); }
+  }
+  State.stadium=null; State.winner=null; State.turnCount=0; log("[BOOT] after players init");
+
+  for (var s=0;s<2;s++){
+    var pl2=State.players[s]; draw(pl2,7);
+    var guard=0;
+    while (!hasBasicInHand(pl2) && guard<10){
+      pl2.deck = pl2.deck.concat(pl2.hand.splice(0)); shuffle(pl2.deck); draw(pl2,7);
+      var opp = State.players[(s+1)%2]; draw(opp,1); pl2.mulligansGiven++; guard++;
+    }
+  }
+  autoSelectOpening(State.players[0]); autoSelectOpening(State.players[1]);
+  revealPrizes(State.players[0]); revealPrizes(State.players[1]);
+
+  State.firstPlayer = rnd(2); State.current=State.firstPlayer; State.phase="main"; State.turnCount=1;
+  State.players[State.current].turnNumber++;
+  log("=== 新規ゲーム開始 ===");
+  log("先攻："+State.players[State.firstPlayer].name);
+
+  draw(State.players[State.current], 1);
+  log("→ 先攻ドロー："+State.players[State.current].name);
+
+  render();
+  log("[DEBUG] あなたの手札 "+State.players[0].hand.length+"枚 / アクティブ："+(State.players[0].active? State.players[0].active.name : "なし"));
+  if (State.current===1){ setTimeout(aiTurn, 250); }
+}
+
+function endTurn(){
+  if (State.winner!=null) return;
+  var me = State.players[State.current];
+  var pokes=allPokemons(me); for (var i=0;i<pokes.length;i++){ pokes[i].wasPlayedThisTurn=false; pokes[i].turnsInPlay++; pokes[i].abilityFlags={}; }
+  betweenTurnsEffects(); checkKOAndPrizes(); if (State.winner!=null){ render(); return; }
+  State.current = (State.current+1)%2; State.phase="main";
+  State.turnCount = (State.current===State.firstPlayer)? State.turnCount+1 : State.turnCount;
+  var nxt = State.players[State.current];
+  nxt.supporterUsedThisTurn=false; nxt.energyAttachedThisTurn=false; nxt.stadiumUsedThisTurn=false; nxt.attackedThisTurn=false; nxt.turnNumber++;
+  if (!draw(nxt,1)) return;
+  log("=== "+nxt.name+" のターン開始（手札"+nxt.hand.length+"） ===");
+  render();
+  if (State.current===1 && !State.winner){ setTimeout(aiTurn, 250); }
+}
+
+/* ========= UI ========= */
+var ui = {selected:null, modalCallback:null, modalValue:null, modalDefaultFirst:false};
+function cardLabel(code){ var c=CardDB[code]; if(!c) return code; if(c.type==="Energy") return c.name; if(c.type) return (c.name+"（"+c.type+"）"); if(c.stage) return (c.name+"（"+c.stage+"・HP"+c.hp+"）"); return c.name; }
+function renderPokemon(p){
+  var div = document.createElement("div"); div.className = "pokemon" + (ui.selected && ui.selected.iid===p.iid ? " selected": "");
+  div.onclick = function(){ ui.selected=p; render(); };
+  var top = document.createElement("div"); top.className="name"; var tags=[]; if (CardDB[p.code].ex) tags.push("ex");
+  var tool = p.tool? (" / どうぐ:"+CardDB[p.tool].name):"";
+  top.innerHTML = "<span>"+p.name+"</span><span class=\"badge\">"+tags.join(" ")+"</span>";
+  var hp = document.createElement("div"); hp.className="hp"; var pct = Math.max(0, Math.min(100, Math.round((1 - p.damage/p.maxHP)*100))); hp.innerHTML = "<i style=\"width:"+pct+"%;\"></i>";
+  var line = document.createElement("div"); line.className="line";
+  line.innerHTML = "<span>HP "+(p.maxHP - p.damage)+"/"+p.maxHP+"</span><span>エネ:"+p.energies.length+"</span><span>にげ:"+Math.max(0,(CardDB[p.code].rc||1)-stadiumBeachReduction(p))+"</span><span>"+tool+"</span>";
+  var en = document.createElement("div"); en.className="energies"; for (var i=0;i<p.energies.length;i++){ var dot=document.createElement("div"); dot.className="energy"; en.appendChild(dot); }
+  var st = document.createElement("div"); st.className="status"; st.innerHTML = statusIcons(p);
+  div.appendChild(top); div.appendChild(hp); div.appendChild(line); div.appendChild(en); div.appendChild(st); return div;
+}
+function renderZone(){
+  var A=State.players[0], B=State.players[1];
+  function mount(id, node){ var z=$(id); if (!z) return; z.innerHTML=""; if (node) z.appendChild(node); }
+  mount("plActiveZone", A.active? renderPokemon(A.active):null); for (var i=0;i<5;i++) mount("plBench"+i, A.bench[i]? renderPokemon(A.bench[i]):null);
+  mount("aiActiveZone", B.active? renderPokemon(B.active):null); for (var j=0;j<5;j++) mount("aiBench"+j, B.bench[j]? renderPokemon(B.bench[j]):null);
+  var st = $("stadiumArea"); if (st) st.innerHTML = State.stadium? ("<div class=\"card\"><div class=\"title\">"+CardDB[State.stadium].name+"</div><div class=\"small\">"+CardDB[State.stadium].text+"</div><div class=\"btn-row\"><button onclick=\"stadiumUse(State.players[0])\">自分が使う</button></div></div>") : "<div class='small'>なし</div>";
+  $("aiDiscard").innerHTML=""; for(var ad=0; ad<B.discard.length; ad++){ $("aiDiscard").appendChild(renderMini(B.discard[ad])); } $("aiLost").innerHTML=""; for(var al=0; al<B.lost.length; al++){ $("aiLost").appendChild(renderMini(B.lost[al])); }
+  $("playerDiscard").innerHTML=""; for(var pd=0; pd<A.discard.length; pd++){ $("playerDiscard").appendChild(renderMini(A.discard[pd])); } $("playerLost").innerHTML=""; for(var pl=0; pl<A.lost.length; pl++){ $("playerLost").appendChild(renderMini(A.lost[pl])); }
+  $("handCount").textContent = A.hand.length+"枚"; var handDiv = $("playerHand"); handDiv.innerHTML=""; for (var h=0; h<A.hand.length; h++){ handDiv.appendChild(renderHandCard(A,A.hand[h])); }
+  $("deckCount").textContent = A.deck.length+"枚"; $("aiPrizes").textContent = "サイド "+B.prizes.length; $("playerPrizes").textContent = "サイド "+A.prizes.length;
+  $("turnInfo").textContent = State.players[State.current].name; $("phaseInfo").textContent = State.phase; $("firstPlayerInfo").textContent = State.players[State.firstPlayer].name;
+  $("selectedInfo").textContent = ui.selected? ("《"+ui.selected.name+"》 HP:"+(ui.selected.maxHP-ui.selected.damage)+"/"+ui.selected.maxHP+" エネ:"+ui.selected.energies.length) : "未選択";
+  $("peekDeckArea").innerHTML="";
+}
+function render(){ try{ renderZone(); }catch(e){ console.error(e); log("JSエラー: render 実行時に例外 - " + (e && e.message ? e.message : e)); } }
+function renderMini(code){ var d=document.createElement("div"); d.className="card"; var nm=(CardDB[code]? CardDB[code].name : code); d.innerHTML = "<div class=\"title\">"+nm+"</div><div class=\"small\">"+((CardDB[code]&&CardDB[code].type) || (CardDB[code]&&CardDB[code].stage) || "")+"</div>"; return d; }
+function renderHandCard(pl, code){
+  var c=CardDB[code]; var card = document.createElement("div"); card.className="card";
+  card.innerHTML = "<div class=\"title\">"+(c?c.name:code)+"</div><div class=\"meta\">"+(c?(c.type? c.type : (c.stage? c.stage : "")):"")+" "+(c&&c.text? " / "+c.text:"")+"</div>";
+  var row=document.createElement("div"); row.className="btn-row";
+  if (c && c.stage==="Basic"){
+    var b=document.createElement("button"); b.textContent="ベンチに出す"; b.onclick=function(){ benchFromHand(pl, code); render(); }; row.appendChild(b);
+    if (!pl.active){ var b2=document.createElement("button"); b2.textContent="バトル場へ"; b2.onclick=function(){ var i=pl.hand.indexOf(code); if(i>=0) pl.active=spawnPokemon(pl.hand.splice(i,1)[0], playerIndexOf(pl)); render(); }; row.appendChild(b2); }
+  }
+  if (c && (c.stage==="Stage1" || c.stage==="Stage2")){
+    var b3=document.createElement("button"); b3.textContent="進化"; b3.onclick=function(){
+      var targets = allPokemons(pl).filter(function(p){ return (c.evolvesFrom===p.name); });
+      if (targets.length===0){ log("進化対象が場にいません"); return; }
+      openSelectModal("進化先を選択", targets.map(function(t){ return {label:t.name, value:t.iid}; }), function(iid){
+        if(!iid){ log("選択がありません"); return; }
+        var t=findByIid(pl, iid); if (t && evolve(pl, t, code)){ var i=pl.hand.indexOf(code); if(i>=0) pl.hand.splice(i,1); render(); }
+      }, true);
+    }; row.appendChild(b3);
+  }
+  if (c && c.type==="Supporter"){ var b4=document.createElement("button"); b4.textContent="使う（サポート）"; b4.onclick=function(){ playSupporter(pl, code); render(); }; row.appendChild(b4); }
+  if (c && c.type==="Item"){ var b5=document.createElement("button"); b5.textContent="使う（グッズ）"; b5.onclick=function(){ playItem(pl, code); render(); }; row.appendChild(b5); }
+  if (c && c.type==="Stadium"){ var b6=document.createElement("button"); b6.textContent="出す（スタジアム）"; b6.onclick=function(){ playStadium(pl, code); render(); }; row.appendChild(b6); }
+  if (c && c.type==="Tool"){ var b7=document.createElement("button"); b7.textContent="付ける（どうぐ）"; b7.onclick=function(){ attachToolFromHand(pl, code); }; row.appendChild(b7); }
+  if (c && c.type==="Energy"){ var b8=document.createElement("button"); b8.textContent="このエネをつける"; b8.onclick=function(){ if(!ui.selected){ log("つける対象のポケモンを選択してください"); return;} attachFromHand(pl, ui.selected); render(); }; row.appendChild(b8); }
+  card.appendChild(row); return card;
+}
+
+/* ========= モーダル ========= */
+var modal = {root:$("modal"), title:$("modalTitle"), content:$("modalContent"), ok:$("modalOk"), cancel:$("modalCancel")};
+function openCustomModal(title, node, okcb){
+  modal.title.textContent=title; modal.content.innerHTML=""; modal.content.appendChild(node);
+  ui.modalCallback = function(val){ try{ okcb(val); }catch(e){ okcb(); } }; ui.modalValue=null; modal.root.style.display="flex";
+}
+function openSelectModal(title, options, cb, defaultFirst){
+  modal.title.textContent = title; modal.content.innerHTML="";
+  var list=document.createElement("div"); ui.modalValue = (defaultFirst && options.length>0)? options[0].value : null;
+  for (var i=0;i<options.length;i++){
+    (function(idx){
+      var opt=options[idx]; var b=document.createElement("span"); b.className="choice"+(defaultFirst&&idx===0?" selected":""); b.textContent=opt.label;
+      b.onclick=function(){ var kids=list.children; for(var m=0;m<kids.length;m++){ kids[m].classList.remove("selected"); } b.classList.add("selected"); ui.modalValue=opt.value; };
+      list.appendChild(b);
+    })(i);
+  }
+  if (options.length===0){ var d=document.createElement("div"); d.className="small"; d.textContent="（該当するカードがありません）"; list.appendChild(d); }
+  modal.content.appendChild(list);
+  ui.modalCallback=function(val){ cb(val); }; modal.root.style.display="flex";
+}
+function openMultiSelectModal(title, options, maxCount, cb){
+  modal.title.textContent=title+"（最大"+maxCount+"枚）"; modal.content.innerHTML="";
+  var list=document.createElement("div"); var picked={};
+  for (var i=0;i<options.length;i++){
+    (function(idx){
+      var opt=options[idx]; var d=document.createElement("span"); d.className="choice"; d.textContent=opt.label;
+      d.onclick=function(){ if(picked[opt.value]){ delete picked[opt.value]; d.classList.remove("selected"); } else { var sz=0; for (var k in picked){ sz++; } if (sz>=maxCount) return; picked[opt.value]=true; d.classList.add("selected"); } };
+      list.appendChild(d);
+    })(i);
+  }
+  modal.content.appendChild(list); ui.modalCallback=function(){ var arr=[]; for (var k in picked){ arr.push(k);} cb(arr); }; modal.root.style.display="flex";
+}
+function closeModal(){ modal.root.style.display="none"; ui.modalValue=null; ui.modalCallback=null; ui.modalDefaultFirst=false; }
+modal.cancel.onclick=closeModal; 
+modal.ok.onclick=function(){ if(ui.modalCallback){ var cb=ui.modalCallback; var val=ui.modalValue; closeModal(); try{ cb(val); }catch(e){ console.error(e); log("JSエラー: モーダルOKコールバック - "+(e&&e.message?e.message:e)); } } else closeModal(); };
+
+/* ========= グローバル起動API（inline onclick フォールバック対応） ========= */
+function startGame(){
+  try{
+    setup();
+  }catch(e){
+    console.error(e);
+    log("JSエラー: startGame - " + (e && e.message ? e.message : e));
+    try{ alert("このページの内容:\nstartGame 例外: " + (e && e.message ? e.message : e)); }catch(_){}
+  }
+}
+function restartGame(){
+  try{
+    setup();
+  }catch(e){
+    console.error(e);
+    log("JSエラー: restartGame - " + (e && e.message ? e.message : e));
+    try{ alert("このページの内容:\nrestartGame 例外: " + (e && e.message ? e.message : e)); }catch(_){}
+  }
+}
+
+/* ========= 起動 & バインド ========= */
+function bindUI(){
+  var sb = $("startBtn"); if (sb) sb.onclick=function(){ startGame(); };
+  var rb = $("restartBtn"); if (rb) rb.onclick=function(){ restartGame(); };
+  $("endTurnBtn").onclick=endTurn;
+  $("attachEnergyBtn").onclick=function(){ if(!ui.selected){ log("対象のポケモンを選択してください"); return; } attachFromHand(State.players[State.current], ui.selected); render(); };
+  $("psychicEmbraceBtn").onclick=function(){ if(!ui.selected){ log("対象のポケモンを選択してください"); return; } if (CardDB[ui.selected.code].type!=="P"){ log("超ポケモンにしか使えません"); return; } doPsychicEmbrace(State.players[State.current], ui.selected); render(); };
+  $("useAbilityBtn").onclick=function(){ if(!ui.selected){ log("対象のポケモンを選択してください"); return; } useAbility(State.players[State.current], ui.selected); };
+  $("attackBtn").onclick=function(){ var me=State.players[State.current], you=State.players[1-State.current]; if(!canAttack(me)){ return; } performAttack(me, you); };
+  $("retreatBtn").onclick=function(){ retreat(State.players[State.current]); };
+  $("peekDeckBtn").onclick=function(){ var A=State.players[0]; var top=A.deck.slice(-5); var area=$("peekDeckArea"); area.innerHTML=""; for(var i=top.length-1;i>=0;i--){ area.appendChild(renderMini(top[i])); } };
+}
+document.addEventListener('DOMContentLoaded', function(){ try{ bindUI(); }catch(e){ console.error(e); } });
+window.addEventListener('load', function(){ try{ bindUI(); }catch(e){ console.error(e); } });
+</script>
+</body>
+</html>
