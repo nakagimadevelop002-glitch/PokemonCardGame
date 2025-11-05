@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a5406bf918846c4aaf9e3b8d97e6f38, type: 3}
-  m_Name: Ralts
+  m_Name: Kirlia
   m_EditorClassIdentifier: 
-  cardID: Ralts
-  cardName: "\u30E9\u30EB\u30C8\u30B9"
+  cardID: Kirlia
+  cardName: "\u30AD\u30EB\u30EA\u30A2"
   cardType: 0
   cardArt: {fileID: 0}
-  stage: 0
-  evolvesFrom: 
+  stage: 1
+  evolvesFrom: "\u30E9\u30EB\u30C8\u30B9"
   type: 0
-  baseHP: 70
+  baseHP: 90
   retreatCost: 1
   isEX: 0
   weakness: 1
@@ -27,11 +27,16 @@ MonoBehaviour:
   resistance: 2
   resistanceValue: 30
   attacks:
-  - attackName: "\u30B5\u30A4\u30B3\u30B7\u30E7\u30C3\u30C8"
+  - attackName: "\u30D4\u30A2\u30FC\u30B9"
     energyCost: 2
     specificRequirements: []
     baseDamage: 30
     effectID: 
     effectDescription: 
     clearsStatus: 0
-  abilities: []
+  abilities:
+  - abilityID: refinement
+    abilityName: "\u7CBE\u88FD"
+    oncePerTurn: 1
+    description: "\u624B\u672D1\u679A\u30C8\u30E9\u30C3\u30B7\u30E5\u21922\u679A\u30C9\u30ED\u30FC"
+    effectCode: 

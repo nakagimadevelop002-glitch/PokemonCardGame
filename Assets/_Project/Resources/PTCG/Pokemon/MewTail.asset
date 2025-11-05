@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a5406bf918846c4aaf9e3b8d97e6f38, type: 3}
-  m_Name: Ralts
+  m_Name: MewTail
   m_EditorClassIdentifier: 
-  cardID: Ralts
-  cardName: "\u30E9\u30EB\u30C8\u30B9"
+  cardID: MewTail
+  cardName: "\u30DF\u30E5\u30A6\u30C6\u30FC\u30EB"
   cardType: 0
   cardArt: {fileID: 0}
   stage: 0
@@ -24,14 +24,19 @@ MonoBehaviour:
   isEX: 0
   weakness: 1
   weaknessMultiplier: 2
-  resistance: 2
+  resistance: 5
   resistanceValue: 30
   attacks:
-  - attackName: "\u30B5\u30A4\u30B3\u30B7\u30E7\u30C3\u30C8"
-    energyCost: 2
+  - attackName: "\u30B5\u30A4\u30B3\u30B7\u30E7\u30C3\u30C8(\u7C21\u6613)"
+    energyCost: 1
     specificRequirements: []
     baseDamage: 30
     effectID: 
     effectDescription: 
     clearsStatus: 0
-  abilities: []
+  abilities:
+  - abilityID: mysterious_tail
+    abilityName: "\u3075\u3057\u304E\u306A\u3057\u3063\u307D"
+    oncePerTurn: 1
+    description: "\u30D0\u30C8\u30EB\u5834\u306B\u3044\u308B\u306A\u3089\u3001\u5C71\u672D\u4E0A6\u679A\u304B\u3089\u30B0\u30C3\u30BA1\u679A\u3092\u516C\u958B\u3057\u3066\u624B\u672D\u306B\u3002\u6B8B\u308A\u3092\u5C71\u672D\u306B\u3082\u3069\u3057\u3066\u5207\u308B\u3002"
+    effectCode: 

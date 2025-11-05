@@ -110,9 +110,9 @@ namespace PTCG
             }
 
             // Auto-select opening pokemon (HTML logic: priority order)
-            AutoSelectOpening(player);
+            // AutoSelectOpening(player);  // ルールに準拠：プレイヤーが手動配置
 
-            return player.activeSlot != null;
+            return true; // マリガン完了でセットアップ成功
         }
 
         private void AutoSelectOpening(PlayerController player)
@@ -147,6 +147,25 @@ namespace PTCG
             instance.Initialize(data, player.playerIndex);
             player.activeSlot = instance;
             Debug.Log($"{player.playerName} placed {data.cardName} as active");
+        }
+
+        /// <summary>
+        /// ポケモンをベンチに配置
+        /// </summary>
+        public bool SpawnPokemonToBench(PlayerController player, PokemonCardData data)
+        {
+            if (player.benchSlots.Count >= 5)
+            {
+                Debug.Log($"{player.playerName}: ベンチが満員です");
+                return false;
+            }
+
+            GameObject go = new GameObject(data.cardName);
+            PokemonInstance instance = go.AddComponent<PokemonInstance>();
+            instance.Initialize(data, player.playerIndex);
+            player.benchSlots.Add(instance);
+            Debug.Log($"{player.playerName} placed {data.cardName} on bench (bench count: {player.benchSlots.Count})");
+            return true;
         }
 
         public void StartTurn()

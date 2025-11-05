@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a5406bf918846c4aaf9e3b8d97e6f38, type: 3}
+  m_Name: GardevoirEX
+  m_EditorClassIdentifier: 
+  cardID: GardevoirEX
+  cardName: "\u30B5\u30FC\u30CA\u30A4\u30C8ex"
+  cardType: 0
+  cardArt: {fileID: 0}
+  stage: 2
+  evolvesFrom: "\u30AD\u30EB\u30EA\u30A2"
+  type: 0
+  baseHP: 310
+  retreatCost: 2
+  isEX: 1
+  weakness: 1
+  weaknessMultiplier: 2
+  resistance: 5
+  resistanceValue: 30
+  attacks:
+  - attackName: "\u30DF\u30E9\u30AF\u30EB\u30D5\u30A9\u30FC\u30B9"
+    energyCost: 3
+    specificRequirements: []
+    baseDamage: 190
+    effectID: 
+    effectDescription: 
+    clearsStatus: 1
+  abilities:
+  - abilityID: psychic_embrace
+    abilityName: "\u30B5\u30A4\u30B3\u30A8\u30F3\u30D6\u30EC\u30A4\u30B9"
+    oncePerTurn: 0
+    description: "\u30C8\u30E9\u30C3\u30B7\u30E5\u306E\u57FA\u672C\u8D85\u3092\u81EA\u5206\u306E\u8D85\u30DD\u30B1\u30E2\u30F3\u306B\u3064\u3051\u308B\uFF08\u30C0\u30E1\u30AB\u30F32/\u679A\u3001\u6C17\u7D76\u4E0D\u53EF\uFF09"
+    effectCode: 

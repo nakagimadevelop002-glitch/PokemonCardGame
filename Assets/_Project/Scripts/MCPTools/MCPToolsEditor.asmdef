@@ -4,6 +4,7 @@
     "references": [
         "TCGEditor",
         "TCGRuntime",
+        "PTCG",
         "UniTask",
         "UnityNaturalMCP.Editor",
         "ModelContextProtocol.Server"

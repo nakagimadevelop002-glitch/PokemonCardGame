@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a5406bf918846c4aaf9e3b8d97e6f38, type: 3}
-  m_Name: Ralts
+  m_Name: Drifloon
   m_EditorClassIdentifier: 
-  cardID: Ralts
-  cardName: "\u30E9\u30EB\u30C8\u30B9"
+  cardID: Drifloon
+  cardName: "\u30D5\u30EF\u30F3\u30C6"
   cardType: 0
   cardArt: {fileID: 0}
   stage: 0
@@ -24,14 +24,14 @@ MonoBehaviour:
   isEX: 0
   weakness: 1
   weaknessMultiplier: 2
-  resistance: 2
+  resistance: 5
   resistanceValue: 30
   attacks:
-  - attackName: "\u30B5\u30A4\u30B3\u30B7\u30E7\u30C3\u30C8"
-    energyCost: 2
+  - attackName: "\u3075\u304F\u3089\u3080\u30D0\u30EB\u30FC\u30F3"
+    energyCost: 1
     specificRequirements: []
-    baseDamage: 30
-    effectID: 
+    baseDamage: 0
+    effectID: selfCountersX30
     effectDescription: 
     clearsStatus: 0
   abilities: []

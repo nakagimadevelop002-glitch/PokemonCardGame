@@ -193,45 +193,20 @@ namespace PTCG
         }
 
         /// <summary>
-        /// カードクリック処理（選択状態切り替え）
+        /// カードクリック処理（直接プレイ）
         /// </summary>
         private void OnCardClicked(GameObject cardUI)
         {
-            // 既存の選択を解除（黒縁に戻す）
-            if (selectedCard != null && selectedCard != cardUI)
-            {
-                Outline prevOutline = selectedCard.GetComponent<Outline>();
-                if (prevOutline != null)
-                {
-                    prevOutline.effectColor = Color.black;
-                    prevOutline.effectDistance = new Vector2(2, 2);
-                }
-            }
+            Debug.Log($"カードクリック: {cardUI.name}");
 
-            // 新しい選択
-            if (selectedCard == cardUI)
+            // CardPlayHandler経由でカードをプレイ
+            if (CardPlayHandler.Instance != null)
             {
-                // 同じカードをクリック → 選択解除（黒縁に戻す）
-                selectedCard = null;
-                Outline outline = cardUI.GetComponent<Outline>();
-                if (outline != null)
-                {
-                    outline.effectColor = Color.black;
-                    outline.effectDistance = new Vector2(2, 2);
-                }
-                Debug.Log("カード選択解除");
+                CardPlayHandler.Instance.PlayCard(cardUI);
             }
             else
             {
-                // 別のカードをクリック → 選択（濃い黄色グロー）
-                selectedCard = cardUI;
-                Outline outline = cardUI.GetComponent<Outline>();
-                if (outline != null)
-                {
-                    outline.effectColor = selectedColor; // 濃い黄色
-                    outline.effectDistance = new Vector2(4, 4); // 選択時は太く
-                }
-                Debug.Log($"カード選択: {cardUI.name}");
+                Debug.LogError("[CardSelectionHandler] CardPlayHandler.Instance is null");
             }
         }
 

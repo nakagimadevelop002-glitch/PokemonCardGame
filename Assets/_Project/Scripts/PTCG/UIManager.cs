@@ -190,10 +190,17 @@ namespace PTCG
             var player2 = GameManager.Instance.player2;
             var currentPlayer = GameManager.Instance.GetCurrentPlayer();
 
-            // Determine which player is "player" (bottom) and which is "opponent" (top)
-            // Assume player1 is bottom, player2 is top
-            UpdatePlayerUI(player1, isBottom: true);
-            UpdatePlayerUI(player2, isBottom: false);
+            // Current player is displayed at bottom, opponent at top
+            if (currentPlayer == player1)
+            {
+                UpdatePlayerUI(player1, isBottom: true);
+                UpdatePlayerUI(player2, isBottom: false);
+            }
+            else
+            {
+                UpdatePlayerUI(player2, isBottom: true);
+                UpdatePlayerUI(player1, isBottom: false);
+            }
         }
 
         private void UpdatePlayerUI(PlayerController player, bool isBottom)
@@ -231,13 +238,13 @@ namespace PTCG
 
         private void UpdateHandDisplay(PlayerController player)
         {
-            Debug.Log($"UpdateHandDisplay called: player={player?.name}, handCount={player?.hand.Count}, playerHandZone={playerHandZone != null}, cardUIPrefab={cardUIPrefab != null}");
+            Debug.Log($"UpdateHandDisplay called: player={player?.playerName}, handCount={player?.hand.Count}, playerHandZone={playerHandZone != null}, cardUIPrefab={cardUIPrefab != null}");
             if (playerHandZone == null || cardUIPrefab == null) return;
 
             // Clear existing hand UI
             foreach (var card in playerHandUICards)
             {
-                if (card != null) Destroy(card);
+                if (card != null) DestroyImmediate(card);
             }
             playerHandUICards.Clear();
 
@@ -261,6 +268,12 @@ namespace PTCG
                 UpdateCardVisual(cardUI, cardData);
 
                 playerHandUICards.Add(cardUI);
+            }
+
+            // Notify CardSelectionHandler to update button interactions
+            if (CardSelectionHandler.Instance != null)
+            {
+                CardSelectionHandler.Instance.UpdateHandCardButtons(playerHandZone.gameObject);
             }
         }
 
