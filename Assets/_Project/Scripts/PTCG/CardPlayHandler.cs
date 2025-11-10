@@ -22,7 +22,7 @@ namespace PTCG
 
         private void Start()
         {
-            Debug.Log("[CardPlayHandler] CardPlayHandler initialized (direct play mode)");
+            // Debug.Log("[CardPlayHandler] CardPlayHandler initialized (direct play mode)");
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace PTCG
         /// </summary>
         private void PlayTrainerCard(PlayerController player, TrainerCardData trainer)
         {
-            Debug.Log($"[CardPlayHandler] Playing Trainer: {trainer.cardName}");
+            // Debug.Log($"[CardPlayHandler] Playing Trainer: {trainer.cardName}");
 
             // CardPlaySystem経由で実行
             if (CardPlaySystem.Instance != null)
@@ -95,7 +95,7 @@ namespace PTCG
         /// </summary>
         private void PlayEnergyCard(PlayerController player, EnergyCardData energy)
         {
-            Debug.Log($"[CardPlayHandler] Playing Energy: {energy.cardName}");
+            // Debug.Log($"[CardPlayHandler] Playing Energy: {energy.cardName}");
 
             // エネルギー貼り先選択（バトル場+ベンチ）
             var options = new System.Collections.Generic.List<SelectOption<PokemonInstance>>();
@@ -138,6 +138,7 @@ namespace PTCG
                         if (selectedPokemon != null && EnergySystem.Instance != null)
                         {
                             bool success = EnergySystem.Instance.AttachEnergyFromHand(player, selectedPokemon);
+
                             if (success)
                             {
                                 // UI更新
@@ -159,7 +160,7 @@ namespace PTCG
         /// </summary>
         private void PlayPokemonCard(PlayerController player, PokemonCardData pokemon)
         {
-            Debug.Log($"[CardPlayHandler] Playing Pokemon: {pokemon.cardName}");
+            // Debug.Log($"[CardPlayHandler] Playing Pokemon: {pokemon.cardName}");
 
             // バトル場が空なら自動的にバトル場へ
             if (player.activeSlot == null)
@@ -204,7 +205,7 @@ namespace PTCG
                             if (player.activeSlot != null && player.benchSlots.Count < 5)
                             {
                                 player.benchSlots.Add(player.activeSlot);
-                                Debug.Log($"[CardPlayHandler] 既存のバトルポケモンをベンチへ移動");
+                                // Debug.Log($"[CardPlayHandler] 既存のバトルポケモンをベンチへ移動");
                             }
                             GameManager.Instance.SpawnPokemonToActive(player, pokemon);
                         }

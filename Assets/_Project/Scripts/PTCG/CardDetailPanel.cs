@@ -48,24 +48,27 @@ namespace PTCG
             // パネル表示
             panelRoot.SetActive(true);
 
-            // カード名
+            // カード名（文字化け防止: クリア後に設定）
             if (cardNameText != null)
             {
+                cardNameText.text = "";
                 cardNameText.text = cardData.cardName;
             }
 
             // ポケモンカードの場合
             if (cardData is PokemonCardData pkm)
             {
-                // タイプ
+                // タイプ（文字化け防止: クリア後に設定）
                 if (cardTypeText != null)
                 {
+                    cardTypeText.text = "";
                     cardTypeText.text = $"タイプ: {GetTypeName(pkm.type)}";
                 }
 
-                // HP
+                // HP（文字化け防止: クリア後に設定）
                 if (cardHPText != null)
                 {
+                    cardHPText.text = "";
                     cardHPText.text = $"HP: {pkm.baseHP}";
                 }
 
@@ -106,6 +109,8 @@ namespace PTCG
                         }
                     }
 
+                    // 文字化け防止: クリア後に設定
+                    cardDescriptionText.text = "";
                     cardDescriptionText.text = description;
                 }
 
@@ -120,6 +125,7 @@ namespace PTCG
             {
                 if (cardTypeText != null)
                 {
+                    cardTypeText.text = "";
                     cardTypeText.text = "トレーナー";
                 }
 
@@ -130,6 +136,7 @@ namespace PTCG
 
                 if (cardDescriptionText != null)
                 {
+                    cardDescriptionText.text = "";
                     cardDescriptionText.text = "トレーナーカードの効果";
                 }
 
@@ -143,6 +150,7 @@ namespace PTCG
             {
                 if (cardTypeText != null)
                 {
+                    cardTypeText.text = "";
                     cardTypeText.text = "エネルギー";
                 }
 
@@ -153,6 +161,7 @@ namespace PTCG
 
                 if (cardDescriptionText != null)
                 {
+                    cardDescriptionText.text = "";
                     cardDescriptionText.text = $"{energy.cardName}を提供します。";
                 }
 
@@ -162,7 +171,7 @@ namespace PTCG
                 }
             }
 
-            Debug.Log($"Showing card detail: {cardData.cardName}");
+            // Debug.Log($"Showing card detail: {cardData.cardName}");
         }
 
         /// <summary>
@@ -175,7 +184,7 @@ namespace PTCG
                 panelRoot.SetActive(false);
             }
 
-            Debug.Log("Hiding card detail");
+            // Debug.Log("Hiding card detail");
         }
 
         private string GetTypeName(PokemonType type)

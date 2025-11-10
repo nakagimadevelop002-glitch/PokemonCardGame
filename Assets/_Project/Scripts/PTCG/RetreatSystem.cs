@@ -97,5 +97,33 @@ namespace PTCG
 
             return true;
         }
+
+        /// <summary>
+        /// にげる不可の理由を取得
+        /// </summary>
+        public string GetRetreatDisabledReason(PlayerController player)
+        {
+            if (player.activeSlot == null) return "バトル場にポケモンがいません";
+            if (player.benchSlots.Count == 0) return "ベンチにポケモンがいません";
+
+            var active = player.activeSlot;
+
+            if (active.statusCondition == StatusCondition.Paralysis) return "まひ状態";
+            if (active.statusCondition == StatusCondition.Sleep) return "ねむり状態";
+
+            int retreatCost = active.data.retreatCost;
+            var gm = GameManager.Instance;
+            if (gm.stadiumInPlay == "BeachCourt" && active.data.stage == PokemonStage.Basic)
+            {
+                retreatCost = Mathf.Max(0, retreatCost - 1);
+            }
+
+            if (active.attachedEnergies.Count < retreatCost)
+            {
+                return $"エネルギー不足（{active.attachedEnergies.Count}/{retreatCost}）";
+            }
+
+            return ""; // にげる可能
+        }
     }
 }

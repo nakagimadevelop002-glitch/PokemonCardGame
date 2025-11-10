@@ -34,8 +34,11 @@ public class AllMCPToolsBuilder : McpBuilderScriptableObject
         builder.WithTools<HierarchyManagerMCPTool>();
         builder.WithTools<ScreenshotCaptureMCPTool>();
         builder.WithTools<CardNameFixerMCPTool>();
+        builder.WithTools<FontCopyMCPTool>();
+        builder.WithTools<GetChildrenMCPTool>();
+        builder.WithTools<SetChildTextFontMCPTool>();
 
-        Debug.Log("AllMCPToolsBuilder: All 27 MCP tools registered successfully");
+        Debug.Log("AllMCPToolsBuilder: All 30 MCP tools registered successfully");
         // Add new MCP tools here in the future:
         // builder.WithTools<YourNewMCPTool>();
     }

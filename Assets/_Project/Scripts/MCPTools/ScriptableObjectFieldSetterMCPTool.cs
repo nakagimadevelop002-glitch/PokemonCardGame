@@ -11,11 +11,11 @@ using UnityEditor;
 [McpServerToolType, Description("Set field values on ScriptableObject assets")]
 public class ScriptableObjectFieldSetterMCPTool
 {
-    [McpServerTool, Description("Set a string field on a ScriptableObject")]
-    public async ValueTask<string> SetStringField(
+    [McpServerTool, Description("Set any field value on a ScriptableObject (auto-parses primitives, string, enum, Color, Vector2/3/4)")]
+    public async ValueTask<string> SetFieldValue(
         [Description("Asset path (e.g., Assets/_Project/Data/Card.asset)")] string assetPath,
         [Description("Field name")] string fieldName,
-        [Description("String value")] string value)
+        [Description("Value as string (will be parsed to appropriate type)")] string value)
     {
 #if UNITY_EDITOR
         try
@@ -27,10 +27,17 @@ public class ScriptableObjectFieldSetterMCPTool
             var field = asset.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
             if (field == null) return $"ERROR: Field '{fieldName}' not found";
 
-            field.SetValue(asset, value);
+            // Parse value based on field type
+            object parsedValue = ParseValue(field.FieldType, value);
+            if (parsedValue == null && !string.IsNullOrEmpty(value))
+            {
+                return $"ERROR: Failed to parse '{value}' as {field.FieldType.Name}";
+            }
+
+            field.SetValue(asset, parsedValue);
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
-            return $"SUCCESS: Set {fieldName} = '{value}'";
+            return $"SUCCESS: Set {fieldName} = {parsedValue}";
         }
         catch (Exception e) { return $"ERROR: {e.Message}"; }
 #else
@@ -39,90 +46,64 @@ public class ScriptableObjectFieldSetterMCPTool
 #endif
     }
 
-    [McpServerTool, Description("Set an int field on a ScriptableObject")]
-    public async ValueTask<string> SetIntField(
-        [Description("Asset path")] string assetPath,
-        [Description("Field name")] string fieldName,
-        [Description("Int value")] int value)
+    private object ParseValue(Type targetType, string value)
     {
-#if UNITY_EDITOR
         try
         {
-            await UniTask.SwitchToMainThread();
-            var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
-            if (asset == null) return $"ERROR: Asset not found at {assetPath}";
+            if (string.IsNullOrEmpty(value))
+                return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
 
-            var field = asset.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (field == null) return $"ERROR: Field '{fieldName}' not found";
+            if (targetType == typeof(bool))
+            {
+                if (value.ToLower() == "true" || value == "1") return true;
+                if (value.ToLower() == "false" || value == "0") return false;
+                return bool.Parse(value);
+            }
 
-            field.SetValue(asset, value);
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            return $"SUCCESS: Set {fieldName} = {value}";
+            if (targetType == typeof(int)) return int.Parse(value);
+            if (targetType == typeof(float)) return float.Parse(value);
+            if (targetType == typeof(double)) return double.Parse(value);
+            if (targetType == typeof(long)) return long.Parse(value);
+            if (targetType == typeof(string)) return value;
+
+            if (targetType.IsEnum)
+                return Enum.Parse(targetType, value, true);
+
+            if (targetType == typeof(Color))
+            {
+                Color color;
+                if (ColorUtility.TryParseHtmlString(value, out color))
+                    return color;
+                return Color.white;
+            }
+
+            if (targetType == typeof(Vector2))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 2)
+                    return new Vector2(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()));
+            }
+
+            if (targetType == typeof(Vector3))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 3)
+                    return new Vector3(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()), float.Parse(parts[2].Trim()));
+            }
+
+            if (targetType == typeof(Vector4))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 4)
+                    return new Vector4(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()), float.Parse(parts[2].Trim()), float.Parse(parts[3].Trim()));
+            }
+
+            return null;
         }
-        catch (Exception e) { return $"ERROR: {e.Message}"; }
-#else
-        await UniTask.Yield();
-        return "ERROR: Editor only";
-#endif
-    }
-
-    [McpServerTool, Description("Set a bool field on a ScriptableObject")]
-    public async ValueTask<string> SetBoolField(
-        [Description("Asset path")] string assetPath,
-        [Description("Field name")] string fieldName,
-        [Description("Bool value")] bool value)
-    {
-#if UNITY_EDITOR
-        try
+        catch
         {
-            await UniTask.SwitchToMainThread();
-            var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
-            if (asset == null) return $"ERROR: Asset not found at {assetPath}";
-
-            var field = asset.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (field == null) return $"ERROR: Field '{fieldName}' not found";
-
-            field.SetValue(asset, value);
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            return $"SUCCESS: Set {fieldName} = {value}";
+            return null;
         }
-        catch (Exception e) { return $"ERROR: {e.Message}"; }
-#else
-        await UniTask.Yield();
-        return "ERROR: Editor only";
-#endif
-    }
-
-    [McpServerTool, Description("Set an enum field on a ScriptableObject by string name")]
-    public async ValueTask<string> SetEnumField(
-        [Description("Asset path")] string assetPath,
-        [Description("Field name")] string fieldName,
-        [Description("Enum value name (e.g., 'Basic', 'Stage1')")] string enumValueName)
-    {
-#if UNITY_EDITOR
-        try
-        {
-            await UniTask.SwitchToMainThread();
-            var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
-            if (asset == null) return $"ERROR: Asset not found at {assetPath}";
-
-            var field = asset.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (field == null) return $"ERROR: Field '{fieldName}' not found";
-            if (!field.FieldType.IsEnum) return $"ERROR: Field '{fieldName}' is not an enum";
-
-            var enumValue = Enum.Parse(field.FieldType, enumValueName);
-            field.SetValue(asset, enumValue);
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            return $"SUCCESS: Set {fieldName} = {enumValueName}";
-        }
-        catch (Exception e) { return $"ERROR: {e.Message}"; }
-#else
-        await UniTask.Yield();
-        return "ERROR: Editor only";
-#endif
     }
 
     [McpServerTool, Description("Get all field names and current values from a ScriptableObject")]

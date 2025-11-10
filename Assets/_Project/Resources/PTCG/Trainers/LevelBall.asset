@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: LevelBall
-  m_EditorClassIdentifier: 
-  cardID: 
+  m_EditorClassIdentifier:
+  cardID: LevelBall
   cardName: "\u30EC\u30D9\u30EB\u30DC\u30FC\u30EB"
   cardType: 0
   cardArt: {fileID: 0}

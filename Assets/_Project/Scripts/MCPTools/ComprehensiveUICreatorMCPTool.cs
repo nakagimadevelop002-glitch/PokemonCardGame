@@ -188,7 +188,7 @@ public class ComprehensiveUICreatorMCPTool
     {
         await UniTask.SwitchToMainThread();
 
-        var existingEventSystem = Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+        var existingEventSystem = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
         if (existingEventSystem != null)
         {
             Debug.Log("EventSystem already exists");

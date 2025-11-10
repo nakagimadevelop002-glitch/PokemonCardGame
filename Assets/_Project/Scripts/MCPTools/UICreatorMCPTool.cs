@@ -203,7 +203,7 @@ public class UICreatorMCPTool
             await UniTask.SwitchToMainThread();
 
             // Check if EventSystem already exists
-            UnityEngine.EventSystems.EventSystem existingEventSystem = Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+            UnityEngine.EventSystems.EventSystem existingEventSystem = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
             if (existingEventSystem != null)
             {
                 return "INFO: EventSystem already exists in scene";

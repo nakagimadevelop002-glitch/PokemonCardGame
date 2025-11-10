@@ -35,7 +35,7 @@ namespace PTCG
             int enhanced = 0;
 
             // 全てのテキストを白く、大きく、太字にする
-            Text[] allTexts = FindObjectsOfType<Text>(true);
+            Text[] allTexts = FindObjectsByType<Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (Text txt in allTexts)
             {
                 if (txt.name.Contains("Count") || txt.name.Contains("Text"))
@@ -59,7 +59,7 @@ namespace PTCG
             }
 
             // 全てのパネルに背景色を設定
-            Image[] allImages = FindObjectsOfType<Image>(true);
+            Image[] allImages = FindObjectsByType<Image>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (Image img in allImages)
             {
                 string name = img.gameObject.name;
@@ -102,7 +102,7 @@ namespace PTCG
             }
 
             // ボタンのテキストも調整
-            Button[] buttons = FindObjectsOfType<Button>(true);
+            Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (Button btn in buttons)
             {
                 Text btnText = btn.GetComponentInChildren<Text>();

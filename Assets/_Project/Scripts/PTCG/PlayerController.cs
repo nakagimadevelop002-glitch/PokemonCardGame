@@ -11,6 +11,7 @@ namespace PTCG
         [Header("Player Info")]
         public string playerName;
         public int playerIndex; // 0 or 1
+        public bool isAI; // AIプレイヤーフラグ
 
         [Header("Zones")]
         public List<CardData> deck = new List<CardData>();
@@ -56,7 +57,7 @@ namespace PTCG
                 deck[i] = deck[j];
                 deck[j] = temp;
             }
-            Debug.Log($"{playerName} shuffled deck");
+            // Debug.Log($"{playerName} shuffled deck");
         }
 
         public bool Draw(int count)
@@ -66,12 +67,21 @@ namespace PTCG
                 if (deck.Count == 0)
                 {
                     Debug.LogError($"{playerName} deck out! Loses the game.");
+
+                    // 山札切れ判定：相手の勝利
+                    var gm = GameManager.Instance;
+                    if (gm != null)
+                    {
+                        int opponentIndex = 1 - playerIndex;
+                        gm.SetWinner(opponentIndex, "相手の山札切れ");
+                    }
+
                     return false;
                 }
                 hand.Add(deck[deck.Count - 1]);
                 deck.RemoveAt(deck.Count - 1);
             }
-            Debug.Log($"{playerName} drew {count} cards");
+            // Debug.Log($"{playerName} drew {count} cards");
             return true;
         }
 
@@ -83,7 +93,7 @@ namespace PTCG
                 prizes.Add(deck[deck.Count - 1]);
                 deck.RemoveAt(deck.Count - 1);
             }
-            Debug.Log($"{playerName} set {prizes.Count} prizes");
+            // Debug.Log($"{playerName} set {prizes.Count} prizes");
         }
 
         public bool HasBasicInHand()

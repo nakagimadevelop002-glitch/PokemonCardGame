@@ -102,7 +102,7 @@ namespace PTCG
         private void SetupTextElements()
         {
             // All text elements - make them white and larger
-            Text[] allTexts = FindObjectsOfType<Text>();
+            Text[] allTexts = FindObjectsByType<Text>(FindObjectsSortMode.None);
             foreach (Text txt in allTexts)
             {
                 if (txt.gameObject.name.Contains("Count"))

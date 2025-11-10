@@ -39,6 +39,22 @@ namespace PTCG
             var gm = GameManager.Instance;
             var opponent = ai == gm.player1 ? gm.player2 : gm.player1;
 
+            // 0. バトル場が空ならベンチから出す
+            if (ai.activeSlot == null && ai.benchSlots.Count > 0)
+            {
+                ai.activeSlot = ai.benchSlots[0];
+                ai.benchSlots.RemoveAt(0);
+                Debug.Log($"AI: 《{ai.activeSlot.data.cardName}》をバトル場に出した");
+
+                // UI更新
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.UpdateUI();
+                }
+
+                yield return new WaitForSeconds(actionDelay);
+            }
+
             // 1. 手札のたねポケモンを全てベンチに出す
             yield return PlaceBasicPokemon(ai);
 
@@ -52,10 +68,25 @@ namespace PTCG
             yield return UsePsychicEmbrace(ai);
 
             // 5. 攻撃可能なら攻撃
-            if (BattleSystem.Instance.CanAttack(ai))
+            bool canAttack = BattleSystem.Instance.CanAttack(ai);
+            Debug.Log($"AI: 攻撃可能? {canAttack}");
+            if (canAttack)
             {
+                Debug.Log("AI: 攻撃実行");
                 BattleSystem.Instance.PerformAttack(ai, opponent);
+
+                // UI更新
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.UpdateUI();
+                }
+
                 yield return new WaitForSeconds(actionDelay);
+            }
+            else
+            {
+                string reason = BattleSystem.Instance.GetAttackDisabledReason(ai);
+                Debug.Log($"AI: 攻撃不可 - {reason}");
             }
 
             // 6. ターン終了
@@ -136,15 +167,28 @@ namespace PTCG
         /// </summary>
         private IEnumerator AttachEnergyFromHand(PlayerController ai)
         {
-            if (ai.energyAttachedThisTurn) yield break;
+            if (ai.energyAttachedThisTurn)
+            {
+                Debug.Log("AI: エネルギー手貼り済み");
+                yield break;
+            }
 
             var energyCard = ai.hand.OfType<EnergyCardData>().FirstOrDefault();
-            if (energyCard != null && ai.activeSlot != null)
+            if (energyCard == null)
             {
-                if (EnergySystem.Instance.AttachEnergyFromHand(ai, ai.activeSlot))
-                {
-                    yield return new WaitForSeconds(actionDelay);
-                }
+                Debug.Log("AI: 手札にエネルギーなし");
+                yield break;
+            }
+
+            if (ai.activeSlot == null)
+            {
+                Debug.Log("AI: バトル場が空");
+                yield break;
+            }
+
+            if (EnergySystem.Instance.AttachEnergyFromHand(ai, ai.activeSlot))
+            {
+                yield return new WaitForSeconds(actionDelay);
             }
         }
 

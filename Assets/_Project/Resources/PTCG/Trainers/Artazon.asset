@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: Artazon
-  m_EditorClassIdentifier: 
-  cardID: 
+  m_EditorClassIdentifier:
+  cardID: Artazon
   cardName: "\u30DC\u30A6\u30EB\u30BF\u30A6\u30F3"
   cardType: 0
   cardArt: {fileID: 0}

@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: SuperRod
-  m_EditorClassIdentifier: 
-  cardID: 
+  m_EditorClassIdentifier:
+  cardID: SuperRod
   cardName: "\u30B9\u30FC\u30D1\u30FC\u30ED\u30C3\u30C9"
   cardType: 0
   cardArt: {fileID: 0}

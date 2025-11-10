@@ -144,7 +144,7 @@ namespace PTCG
                 }
             }
 
-            Debug.Log($"Card hover enter: {card.name}");
+            // Debug.Log($"Card hover enter: {card.name}");
         }
 
         private void OnCardHoverExit(GameObject card)
@@ -169,7 +169,7 @@ namespace PTCG
                     }
                 }
 
-                Debug.Log($"Card hover exit: {card.name}");
+                // Debug.Log($"Card hover exit: {card.name}");
             }
         }
 

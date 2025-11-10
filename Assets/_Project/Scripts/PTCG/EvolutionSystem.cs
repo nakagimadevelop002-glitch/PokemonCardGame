@@ -69,13 +69,6 @@ namespace PTCG
                     return false;
                 }
 
-                var gm = GameManager.Instance;
-                if (gm.currentPlayerIndex == gm.firstPlayerIndex && gm.turnCount == 1)
-                {
-                    Debug.Log("→ 先攻1Tは《ふしぎなアメ》不可");
-                    return false;
-                }
-
                 // 進化系統チェック（中間進化が存在するか）
                 // 簡易実装: evolvesFromフィールドを信頼
                 if (string.IsNullOrEmpty(evolutionCard.evolvesFrom))

@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: EscapeRope
-  m_EditorClassIdentifier: 
-  cardID: 
+  m_EditorClassIdentifier:
+  cardID: EscapeRope
   cardName: "\u3042\u306A\u306C\u3051\u306E\u30D2\u30E2"
   cardType: 0
   cardArt: {fileID: 0}

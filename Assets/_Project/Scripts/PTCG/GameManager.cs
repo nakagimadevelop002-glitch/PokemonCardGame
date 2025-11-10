@@ -23,6 +23,7 @@ namespace PTCG
 
         [Header("Winner")]
         public int winnerIndex = -1; // -1 = no winner
+        public string winReason = ""; // 勝利理由
 
         private void Awake()
         {
@@ -43,7 +44,7 @@ namespace PTCG
                 cam.transform.position = new Vector3(0, 1, -10);
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.backgroundColor = Color.black;
-                Debug.Log("Main Camera created by GameManager");
+                // Debug.Log("Main Camera created by GameManager");
             }
         }
 
@@ -89,7 +90,7 @@ namespace PTCG
             // Mulligan check
             while (!player.HasBasicInHand())
             {
-                Debug.Log($"{player.playerName} has no basic - mulligan");
+                // Debug.Log($"{player.playerName} has no basic - mulligan");
                 player.mulligansGiven++;
 
                 // Opponent draws 1 extra
@@ -110,7 +111,7 @@ namespace PTCG
             }
 
             // Auto-select opening pokemon (HTML logic: priority order)
-            // AutoSelectOpening(player);  // ルールに準拠：プレイヤーが手動配置
+            AutoSelectOpening(player);  // ポケモンカードゲーム公式ルール：バトル場に1匹必須配置
 
             return true; // マリガン完了でセットアップ成功
         }
@@ -146,7 +147,7 @@ namespace PTCG
             PokemonInstance instance = go.AddComponent<PokemonInstance>();
             instance.Initialize(data, player.playerIndex);
             player.activeSlot = instance;
-            Debug.Log($"{player.playerName} placed {data.cardName} as active");
+            // Debug.Log($"{player.playerName} placed {data.cardName} as active");
         }
 
         /// <summary>
@@ -164,7 +165,7 @@ namespace PTCG
             PokemonInstance instance = go.AddComponent<PokemonInstance>();
             instance.Initialize(data, player.playerIndex);
             player.benchSlots.Add(instance);
-            Debug.Log($"{player.playerName} placed {data.cardName} on bench (bench count: {player.benchSlots.Count})");
+            // Debug.Log($"{player.playerName} placed {data.cardName} on bench (bench count: {player.benchSlots.Count})");
             return true;
         }
 
@@ -182,6 +183,18 @@ namespace PTCG
 
             currentPhase = "main";
             Debug.Log($"=== Turn {turnCount} - {current.playerName} ===");
+
+            // AI自動起動
+            if (current.isAI && AIController.Instance != null)
+            {
+                AIController.Instance.ExecuteAITurn(current);
+            }
+
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateUI();
+            }
         }
 
         public void EndTurn()
@@ -262,7 +275,8 @@ namespace PTCG
 
         public void KnockoutPokemon(PlayerController owner, PokemonInstance pokemon)
         {
-            Debug.Log($"{pokemon.data.cardName} is knocked out!");
+            // 詳細ログ: 誰のポケモンがきぜつ
+            Debug.Log($"【きぜつ】{owner.playerName}の《{pokemon.data.cardName}》がきぜつ！");
 
             // Move to discard
             owner.discard.Add(pokemon.data);
@@ -282,8 +296,15 @@ namespace PTCG
             int prizeCount = pokemon.data.isEX ? 2 : 1;
             TakePrizes(opponent, prizeCount);
 
+            // Update UI after prize taken
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateUI();
+            }
+
             // Destroy game object
-            if (pokemon == owner.activeSlot)
+            bool wasActive = (pokemon == owner.activeSlot);
+            if (wasActive)
             {
                 owner.activeSlot = null;
             }
@@ -293,25 +314,86 @@ namespace PTCG
             }
             Destroy(pokemon.gameObject);
 
-            // Check win condition
+            // Check win condition: サイド0枚
             if (opponent.prizes.Count == 0)
             {
-                winnerIndex = opponent.playerIndex;
-                Debug.Log($"=== {opponent.playerName} WINS! ===");
+                SetWinner(opponent.playerIndex, "サイド0枚獲得");
+                return;
+            }
+
+            // Check win condition: バトル場が空 & ベンチも空
+            if (wasActive)
+            {
+                if (owner.benchSlots.Count == 0)
+                {
+                    SetWinner(opponent.playerIndex, "相手の場にポケモンがいない");
+                    return;
+                }
+
+                // ベンチからバトル場へ移動（モーダル選択）
+                PromptBenchSelection(owner);
             }
         }
 
         private void TakePrizes(PlayerController player, int count)
         {
+            int prizesBefore = player.prizes.Count;
             for (int i = 0; i < count; i++)
             {
                 if (player.prizes.Count > 0)
                 {
                     player.hand.Add(player.prizes[player.prizes.Count - 1]);
                     player.prizes.RemoveAt(player.prizes.Count - 1);
-                    Debug.Log($"{player.playerName} took a prize. Remaining: {player.prizes.Count}");
                 }
             }
+            int prizesAfter = player.prizes.Count;
+            int actualTaken = prizesBefore - prizesAfter;
+
+            // 詳細ログ: 誰が何枚サイド獲得→残り何枚
+            Debug.Log($"【サイド獲得】{player.playerName}が{actualTaken}枚獲得！(残りサイド: {prizesBefore}枚→{prizesAfter}枚)");
+        }
+
+        /// <summary>
+        /// バトル場が空になった際、ベンチから選択してバトル場へ移動
+        /// </summary>
+        private void PromptBenchSelection(PlayerController owner)
+        {
+            // AIの場合は自動選択
+            if (owner.isAI || ModalSystem.Instance == null)
+            {
+                owner.activeSlot = owner.benchSlots[0];
+                owner.benchSlots.RemoveAt(0);
+                Debug.Log($"【強制交代】{owner.playerName}: ベンチから《{owner.activeSlot.data.cardName}》をバトル場へ（自動選択）");
+                if (UIManager.Instance != null) UIManager.Instance.UpdateUI();
+                return;
+            }
+
+            // プレイヤーの場合はモーダル選択
+            var options = new List<SelectOption<int>>();
+            for (int i = 0; i < owner.benchSlots.Count; i++)
+            {
+                var bench = owner.benchSlots[i];
+                int currentHP = bench.data.baseHP - bench.currentDamage;
+                options.Add(new SelectOption<int>($"{bench.data.cardName} (HP: {currentHP}/{bench.data.baseHP})", i));
+            }
+
+            ModalSystem.Instance.OpenSelectModal(
+                $"{owner.playerName}: バトル場へ出すポケモンを選択",
+                options,
+                (selectedIndex) =>
+                {
+                    if (selectedIndex < 0 || selectedIndex >= owner.benchSlots.Count) return;
+
+                    var selectedPokemon = owner.benchSlots[selectedIndex];
+                    owner.activeSlot = selectedPokemon;
+                    owner.benchSlots.RemoveAt(selectedIndex);
+
+                    Debug.Log($"【強制交代】{owner.playerName}: ベンチから《{selectedPokemon.data.cardName}》をバトル場へ");
+
+                    if (UIManager.Instance != null) UIManager.Instance.UpdateUI();
+                },
+                defaultFirst: true
+            );
         }
 
         public PlayerController GetCurrentPlayer()
@@ -322,6 +404,109 @@ namespace PTCG
         public PlayerController GetOpponentPlayer()
         {
             return currentPlayerIndex == 0 ? player2 : player1;
+        }
+
+        /// <summary>
+        /// 勝敗を設定（勝者のインデックスと勝利理由を記録）
+        /// </summary>
+        public void SetWinner(int winnerPlayerIndex, string reason)
+        {
+            winnerIndex = winnerPlayerIndex;
+            winReason = reason;
+
+            var winner = winnerPlayerIndex == 0 ? player1 : player2;
+            Debug.Log($"=== {winner.playerName} WINS! ===");
+            Debug.Log($"勝利理由: {reason}");
+
+            // 勝敗確定時のモーダル表示
+            ShowWinnerModal(winner, reason);
+        }
+
+        /// <summary>
+        /// 勝敗結果モーダルを表示
+        /// </summary>
+        private void ShowWinnerModal(PlayerController winner, string reason)
+        {
+            if (ModalSystem.Instance == null) return;
+
+            string message = $"{winner.playerName} の勝利！\n\n勝利理由: {reason}";
+            ModalSystem.Instance.OpenConfirmModal("ゲーム終了", message, (result) =>
+            {
+                if (result)
+                {
+                    RestartGame();
+                }
+            });
+        }
+
+        /// <summary>
+        /// ゲームを最初から再スタート
+        /// </summary>
+        public void RestartGame()
+        {
+            Debug.Log("=== Game Restart ===");
+
+            // 勝敗状態リセット
+            winnerIndex = -1;
+            winReason = "";
+            turnCount = 0;
+            currentPhase = "setup";
+            stadiumInPlay = "";
+
+            // プレイヤー状態リセット
+            if (player1 != null)
+            {
+                CleanupPlayer(player1);
+            }
+            if (player2 != null)
+            {
+                CleanupPlayer(player2);
+            }
+
+            // UI完全リセット
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateUI();
+            }
+
+            // ゲーム再開
+            if (GameInitializer.Instance != null)
+            {
+                GameInitializer.Instance.StartNewGame();
+            }
+        }
+
+        /// <summary>
+        /// プレイヤーの状態をクリーンアップ
+        /// </summary>
+        private void CleanupPlayer(PlayerController player)
+        {
+            // フィールドのポケモンを削除
+            if (player.activeSlot != null)
+            {
+                Destroy(player.activeSlot.gameObject);
+                player.activeSlot = null;
+            }
+
+            foreach (var bench in player.benchSlots)
+            {
+                if (bench != null)
+                {
+                    Destroy(bench.gameObject);
+                }
+            }
+            player.benchSlots.Clear();
+
+            // ゾーンをクリア
+            player.hand.Clear();
+            player.deck.Clear();
+            player.discard.Clear();
+            player.lostZone.Clear();
+            player.prizes.Clear();
+
+            // ターン状態リセット
+            player.ResetTurnFlags();
+            player.mulligansGiven = 0;
         }
     }
 }

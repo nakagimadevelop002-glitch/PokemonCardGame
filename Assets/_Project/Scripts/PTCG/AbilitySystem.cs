@@ -58,9 +58,8 @@ namespace PTCG
                     break;
 
                 case "psychic_embrace":
-                    // サイコエンブレイスはEnergySystemで処理
-                    Debug.Log("《サイコエンブレイス》はエネルギーシステムから使用してください");
-                    return false;
+                    success = UsePsychicEmbrace(player, pokemon);
+                    break;
 
                 case "restart":
                     success = UseRestart(player, pokemon);
@@ -123,9 +122,66 @@ namespace PTCG
                 return false;
             }
 
-            // TODO: モーダル選択システム実装後に追加
-            Debug.Log("→ アドレナブレイン（モーダル選択未実装）");
-            return false;
+            // 第1段階: 自分のポケモンからダメカンを最大2個選択
+            var sourceOptions = sources.Select(p => new SelectOption<PokemonInstance>(
+                $"{p.data.cardName}（ダメカン{p.currentDamage / 10}個）",
+                p
+            )).ToList();
+
+            ModalSystem.Instance.OpenMultiSelectModal(
+                "ダメカンを取るポケモンを3個まで選択",
+                sourceOptions,
+                3,
+                (selectedPokemons) =>
+                {
+                    if (selectedPokemons == null || selectedPokemons.Count == 0)
+                    {
+                        Debug.Log("→ アドレナブレイン: ダメカンを選択しませんでした");
+                        return;
+                    }
+
+                    // 各ポケモンから10ダメージ（1個）ずつ減らす
+                    int totalDamageToMove = selectedPokemons.Count * 10;
+                    foreach (var p in selectedPokemons)
+                    {
+                        p.currentDamage = Mathf.Max(0, p.currentDamage - 10);
+                    }
+
+                    // 第2段階: 相手のポケモンを1匹選択
+                    var targetOptions = targets.Select(p => new SelectOption<PokemonInstance>(
+                        $"{p.data.cardName}（HP {p.data.baseHP - p.currentDamage}/{p.data.baseHP}）",
+                        p
+                    )).ToList();
+
+                    ModalSystem.Instance.OpenSelectModal(
+                        "ダメカンを乗せる相手のポケモンを選択",
+                        targetOptions,
+                        (selectedTarget) =>
+                        {
+                            if (selectedTarget == null)
+                            {
+                                Debug.Log("→ アドレナブレイン: 相手のポケモンを選択しませんでした");
+                                return;
+                            }
+
+                            // ダメージを乗せる
+                            selectedTarget.currentDamage += totalDamageToMove;
+                            Debug.Log($"→ アドレナブレイン: ダメカン{selectedPokemons.Count}個を《{selectedTarget.data.cardName}》へ移動");
+
+                            // きぜつチェック
+                            if (selectedTarget.IsKnockedOut)
+                            {
+                                gm.KnockoutPokemon(opponent, selectedTarget);
+                            }
+
+                            UIManager.Instance?.UpdateUI();
+                        },
+                        defaultFirst: true
+                    );
+                }
+            );
+
+            return true;
         }
 
         /// <summary>
@@ -159,9 +215,37 @@ namespace PTCG
                 return true;
             }
 
-            // TODO: モーダル選択システム実装後に追加
-            Debug.Log("→ ふしぎなしっぽ（モーダル選択未実装）");
-            return false;
+            // グッズから1枚選択
+            var itemOptions = items.Select(card => new SelectOption<TrainerCardData>(
+                card.cardName,
+                card
+            )).ToList();
+
+            ModalSystem.Instance.OpenSelectModal(
+                $"山札上{count}枚から グッズ を1枚選択",
+                itemOptions,
+                (selectedCard) =>
+                {
+                    if (selectedCard == null)
+                    {
+                        Debug.Log("→ ふしぎなしっぽ: グッズを選択しませんでした");
+                        player.ShuffleDeck();
+                        return;
+                    }
+
+                    // 選択したカードを山札から削除し手札に追加
+                    player.deck.Remove(selectedCard);
+                    player.hand.Add(selectedCard);
+                    Debug.Log($"→ ふしぎなしっぽ: 《{selectedCard.cardName}》を手札に");
+
+                    // 山札をシャッフル
+                    player.ShuffleDeck();
+                    UIManager.Instance?.UpdateUI();
+                },
+                defaultFirst: true
+            );
+
+            return true;
         }
 
         /// <summary>
@@ -195,9 +279,93 @@ namespace PTCG
                 return false;
             }
 
-            // TODO: モーダル選択システム実装後に追加
-            Debug.Log("→ 精製（モーダル選択未実装）");
-            return false;
+            // 手札から1枚選択してトラッシュ
+            var handOptions = player.hand.Select(card => new SelectOption<CardData>(
+                card.cardName,
+                card
+            )).ToList();
+
+            ModalSystem.Instance.OpenSelectModal(
+                "手札から1枚トラッシュ",
+                handOptions,
+                (selectedCard) =>
+                {
+                    if (selectedCard == null)
+                    {
+                        Debug.Log("→ 精製: カードを選択しませんでした");
+                        return;
+                    }
+
+                    // 手札から削除してトラッシュへ
+                    player.hand.Remove(selectedCard);
+                    player.discard.Add(selectedCard);
+                    Debug.Log($"→ 精製: 《{selectedCard.cardName}》をトラッシュ");
+
+                    // 2枚ドロー
+                    player.Draw(2);
+                    Debug.Log("→ 精製: 2枚ドロー");
+
+                    UIManager.Instance?.UpdateUI();
+                },
+                defaultFirst: true
+            );
+
+            return true;
+        }
+
+        /// <summary>
+        /// サイコエンブレイス（サーナイトex）
+        /// </summary>
+        private bool UsePsychicEmbrace(PlayerController player, PokemonInstance pokemon)
+        {
+            // トラッシュに基本超エネルギーがあるか
+            var hasPsychicEnergy = player.discard.OfType<EnergyCardData>()
+                .Any(e => e.cardID == "BasicPsychic" && e.isBasic);
+
+            if (!hasPsychicEnergy)
+            {
+                Debug.Log("《サイコエンブレイス》：トラッシュに基本超エネルギーがありません");
+                return false;
+            }
+
+            // 自分の場の超ポケモン（ダメカン20を乗せても気絶しないもの）
+            var psychicPokemons = player.GetAllPokemons()
+                .Where(p => p.data.type == PokemonType.P && (p.currentDamage + 20 < p.MaxHP))
+                .ToList();
+
+            if (psychicPokemons.Count == 0)
+            {
+                Debug.Log("→ 対象の超ポケモンがいません（または気絶してしまいます）");
+                return false;
+            }
+
+            // 対象を選択
+            var targetOptions = psychicPokemons.Select(p => new SelectOption<PokemonInstance>(
+                $"{p.data.cardName}（HP {p.MaxHP - p.currentDamage}/{p.MaxHP}）",
+                p
+            )).ToList();
+
+            ModalSystem.Instance.OpenSelectModal(
+                "《サイコエンブレイス》エネルギーを付けるポケモンを選択",
+                targetOptions,
+                (selectedPokemon) =>
+                {
+                    if (selectedPokemon == null)
+                    {
+                        Debug.Log("→ サイコエンブレイス: ポケモンを選択しませんでした");
+                        return;
+                    }
+
+                    // EnergySystemで処理
+                    if (EnergySystem.Instance.UsePsychicEmbrace(player, selectedPokemon))
+                    {
+                        UIManager.Instance?.UpdateUI();
+                    }
+                },
+                defaultFirst: true
+            );
+
+            return true;
         }
     }
 }

@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: RareCandy
-  m_EditorClassIdentifier: 
-  cardID: 
+  m_EditorClassIdentifier:
+  cardID: RareCandy
   cardName: "\u3075\u3057\u304E\u306A\u30A2\u30E1"
   cardType: 0
   cardArt: {fileID: 0}

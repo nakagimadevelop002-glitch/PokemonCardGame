@@ -203,6 +203,213 @@ public class InspectorFieldSetterMCPTool
 #endif
     }
 
+    [McpServerTool, Description("Set any field value on a component (auto-parses primitives, string, enum, Color, Vector2/3/4)")]
+    public async ValueTask<string> SetFieldValue(
+        [Description("Target GameObject name")] string objectName,
+        [Description("Component type name (e.g., ModalSystem)")] string componentTypeName,
+        [Description("Field name to set")] string fieldName,
+        [Description("Value as string (will be parsed to appropriate type)")] string value)
+    {
+#if UNITY_EDITOR
+        try
+        {
+            await UniTask.SwitchToMainThread();
+
+            GameObject targetObject = GameObject.Find(objectName);
+            if (targetObject == null)
+            {
+                return $"ERROR: GameObject '{objectName}' not found";
+            }
+
+            var componentType = System.AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => a.GetTypes())
+                .FirstOrDefault(t => t.Name == componentTypeName && typeof(UnityEngine.Component).IsAssignableFrom(t));
+
+            if (componentType == null)
+            {
+                return $"ERROR: Component type '{componentTypeName}' not found";
+            }
+
+            var component = targetObject.GetComponent(componentType);
+            if (component == null)
+            {
+                return $"ERROR: Component '{componentTypeName}' not found on '{objectName}'";
+            }
+
+            FieldInfo field = componentType.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+            if (field == null)
+            {
+                return $"ERROR: Field '{fieldName}' not found on '{componentTypeName}'";
+            }
+
+            // Parse value based on field type
+            object parsedValue = ParseValue(field.FieldType, value);
+            if (parsedValue == null && !string.IsNullOrEmpty(value))
+            {
+                return $"ERROR: Failed to parse '{value}' as {field.FieldType.Name}";
+            }
+
+            field.SetValue(component, parsedValue);
+
+            // Mark scene dirty and save
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            Debug.Log($"Scene '{scene.name}' saved after setting {componentTypeName}.{fieldName} = {parsedValue}");
+
+            return $"SUCCESS: Set {objectName}.{componentTypeName}.{fieldName} = {parsedValue}";
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to set field value: {e.Message}");
+            return $"ERROR: {e.Message}";
+        }
+#else
+        await UniTask.Yield();
+        return "ERROR: Field value setting only available in Unity Editor";
+#endif
+    }
+
+    /// <summary>
+    /// Parse string value to appropriate type
+    /// </summary>
+    private object ParseValue(Type targetType, string value)
+    {
+        try
+        {
+            // Null or empty
+            if (string.IsNullOrEmpty(value))
+            {
+                return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+            }
+
+            // Bool
+            if (targetType == typeof(bool))
+            {
+                if (value.ToLower() == "true" || value == "1") return true;
+                if (value.ToLower() == "false" || value == "0") return false;
+                return bool.Parse(value);
+            }
+
+            // Int
+            if (targetType == typeof(int))
+                return int.Parse(value);
+
+            // Float
+            if (targetType == typeof(float))
+                return float.Parse(value);
+
+            // Double
+            if (targetType == typeof(double))
+                return double.Parse(value);
+
+            // Long
+            if (targetType == typeof(long))
+                return long.Parse(value);
+
+            // String
+            if (targetType == typeof(string))
+                return value;
+
+            // Enum
+            if (targetType.IsEnum)
+                return Enum.Parse(targetType, value, true);
+
+            // Color (hex format: #RRGGBB or #RRGGBBAA)
+            if (targetType == typeof(Color))
+            {
+                Color color;
+                if (ColorUtility.TryParseHtmlString(value, out color))
+                    return color;
+                return Color.white;
+            }
+
+            // Vector2 (format: "x,y")
+            if (targetType == typeof(Vector2))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 2)
+                    return new Vector2(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()));
+            }
+
+            // Vector3 (format: "x,y,z")
+            if (targetType == typeof(Vector3))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 3)
+                    return new Vector3(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()), float.Parse(parts[2].Trim()));
+            }
+
+            // Vector4 (format: "x,y,z,w")
+            if (targetType == typeof(Vector4))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 4)
+                    return new Vector4(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()), float.Parse(parts[2].Trim()), float.Parse(parts[3].Trim()));
+            }
+
+            // Quaternion (format: "x,y,z,w")
+            if (targetType == typeof(Quaternion))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 4)
+                    return new Quaternion(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()), float.Parse(parts[2].Trim()), float.Parse(parts[3].Trim()));
+            }
+
+            // Rect (format: "x,y,width,height")
+            if (targetType == typeof(Rect))
+            {
+                string[] parts = value.Split(',');
+                if (parts.Length == 4)
+                    return new Rect(float.Parse(parts[0].Trim()), float.Parse(parts[1].Trim()), float.Parse(parts[2].Trim()), float.Parse(parts[3].Trim()));
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    [McpServerTool, Description("Set GameObject active state (enable/disable)")]
+    public async ValueTask<string> SetGameObjectActive(
+        [Description("Target GameObject name")] string objectName,
+        [Description("Active state (true = enabled, false = disabled)")] string active)
+    {
+#if UNITY_EDITOR
+        try
+        {
+            await UniTask.SwitchToMainThread();
+
+            GameObject targetObject = GameObject.Find(objectName);
+            if (targetObject == null)
+            {
+                return $"ERROR: GameObject '{objectName}' not found";
+            }
+
+            bool activeState = active.ToLower() == "true" || active == "1";
+            targetObject.SetActive(activeState);
+
+            // Mark scene dirty and save
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            Debug.Log($"Scene '{scene.name}' saved after setting {objectName}.SetActive({activeState})");
+
+            return $"SUCCESS: Set {objectName}.SetActive({activeState})";
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to set active state: {e.Message}");
+            return $"ERROR: {e.Message}";
+        }
+#else
+        await UniTask.Yield();
+        return "ERROR: SetActive only available in Unity Editor";
+#endif
+    }
+
     [McpServerTool, Description("List all public fields on a component")]
     public async ValueTask<string> ListComponentFields(
         [Description("Target GameObject name")] string objectName,

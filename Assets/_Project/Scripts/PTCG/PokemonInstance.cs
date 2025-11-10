@@ -64,7 +64,7 @@ namespace PTCG
         public void TakeDamage(int damage)
         {
             currentDamage += damage;
-            Debug.Log($"{data.cardName} takes {damage} damage. Total: {currentDamage}/{MaxHP}");
+            // Debug.Log($"{data.cardName} takes {damage} damage. Total: {currentDamage}/{MaxHP}");
         }
 
         public void Heal(int amount)
@@ -75,7 +75,7 @@ namespace PTCG
         public void AttachEnergy(EnergyCardData energy)
         {
             attachedEnergies.Add(energy);
-            Debug.Log($"Attached {energy.cardName} to {data.cardName}");
+            // Debug.Log($"Attached {energy.cardName} to {data.cardName}");
         }
 
         public void ClearStatus()
