@@ -48,28 +48,25 @@ namespace PTCG
             // パネル表示
             panelRoot.SetActive(true);
 
-            // カード名（文字化け防止: クリア後に設定）
+            // カード名
             if (cardNameText != null)
             {
-                cardNameText.text = "";
                 cardNameText.text = cardData.cardName;
             }
 
             // ポケモンカードの場合
             if (cardData is PokemonCardData pkm)
             {
-                // タイプ（文字化け防止: クリア後に設定）
+                // タイプ
                 if (cardTypeText != null)
                 {
-                    cardTypeText.text = "";
-                    cardTypeText.text = $"タイプ: {GetTypeName(pkm.type)}";
+                    cardTypeText.text = "タイプ: " + GetTypeName(pkm.type);
                 }
 
-                // HP（文字化け防止: クリア後に設定）
+                // HP
                 if (cardHPText != null)
                 {
-                    cardHPText.text = "";
-                    cardHPText.text = $"HP: {pkm.baseHP}";
+                    cardHPText.text = "HP: " + pkm.baseHP;
                 }
 
                 // 説明（攻撃・特性）
@@ -83,7 +80,7 @@ namespace PTCG
                         description += "【特性】\n";
                         foreach (var ability in pkm.abilities)
                         {
-                            description += $"{ability.abilityName}\n";
+                            description += ability.abilityName + "\n";
                         }
                         description += "\n";
                     }
@@ -105,12 +102,10 @@ namespace PTCG
                                     }
                                 }
                             }
-                            description += $"{energyCost}{attack.attackName} {attack.baseDamage}\n";
+                            description += energyCost + attack.attackName + " " + attack.baseDamage + "\n";
                         }
                     }
 
-                    // 文字化け防止: クリア後に設定
-                    cardDescriptionText.text = "";
                     cardDescriptionText.text = description;
                 }
 
@@ -125,7 +120,6 @@ namespace PTCG
             {
                 if (cardTypeText != null)
                 {
-                    cardTypeText.text = "";
                     cardTypeText.text = "トレーナー";
                 }
 
@@ -136,7 +130,6 @@ namespace PTCG
 
                 if (cardDescriptionText != null)
                 {
-                    cardDescriptionText.text = "";
                     cardDescriptionText.text = "トレーナーカードの効果";
                 }
 
@@ -150,7 +143,6 @@ namespace PTCG
             {
                 if (cardTypeText != null)
                 {
-                    cardTypeText.text = "";
                     cardTypeText.text = "エネルギー";
                 }
 
@@ -161,8 +153,7 @@ namespace PTCG
 
                 if (cardDescriptionText != null)
                 {
-                    cardDescriptionText.text = "";
-                    cardDescriptionText.text = $"{energy.cardName}を提供します。";
+                    cardDescriptionText.text = energy.cardName + "を提供します。";
                 }
 
                 if (cardTypeIcon != null)

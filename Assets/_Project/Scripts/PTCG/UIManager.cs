@@ -18,6 +18,7 @@ namespace PTCG
 
         [Header("Opponent UI")]
         public Transform opponentDeckZone;
+        public Transform opponentHandZone;
         public Transform opponentBenchZone;
         public Transform opponentPrizesZone;
         public Transform opponentActiveZone;
@@ -41,6 +42,7 @@ namespace PTCG
 
         // Active card UI instances
         private List<GameObject> playerHandUICards = new List<GameObject>();
+        private List<GameObject> opponentHandUICards = new List<GameObject>();
         private GameObject playerActiveUICard;
         private GameObject opponentActiveUICard;
         private List<GameObject> playerBenchUICards = new List<GameObject>();
@@ -90,6 +92,12 @@ namespace PTCG
             {
                 GameObject obj = GameObject.Find("OpponentDeck");
                 if (obj != null) opponentDeckZone = obj.transform;
+            }
+
+            if (opponentHandZone == null)
+            {
+                GameObject obj = GameObject.Find("OpponentHand");
+                if (obj != null) opponentHandZone = obj.transform;
             }
 
             if (opponentBenchZone == null)
@@ -283,6 +291,9 @@ namespace PTCG
                 if (opponentDiscardCount != null)
                     opponentDiscardCount.text = player.discard.Count.ToString();
 
+                // Update opponent hand display (face-down cards)
+                UpdateOpponentHandDisplay(player);
+
                 // Update active pokemon
                 UpdateActivePokemonDisplay(player, false);
 
@@ -330,6 +341,105 @@ namespace PTCG
             {
                 CardSelectionHandler.Instance.UpdateHandCardButtons(playerHandZone.gameObject);
             }
+        }
+
+        /// <summary>
+        /// 相手手札を裏面表示で更新（上開き扇状配置）
+        /// </summary>
+        private void UpdateOpponentHandDisplay(PlayerController player)
+        {
+            if (opponentHandZone == null || cardUIPrefab == null) return;
+
+            // Clear existing hand UI
+            foreach (var card in opponentHandUICards)
+            {
+                if (card != null) DestroyImmediate(card);
+            }
+            opponentHandUICards.Clear();
+
+            int cardCount = player.hand.Count;
+
+            // 扇状配置パラメータ（上開き∩字型）
+            float fanRadius = 800f;
+            float startAngle = -25f;  // プレイヤーと同じ
+            float endAngle = 25f;     // プレイヤーと同じ
+            float yOffset = 200f;     // Y=-600になるように調整（-800 + 200 = -600）
+
+            // 角度の計算
+            float totalAngle = endAngle - startAngle;
+            float angleStep = cardCount > 1 ? totalAngle / (cardCount - 1) : 0;
+
+            for (int i = 0; i < cardCount; i++)
+            {
+                GameObject cardUI = Instantiate(cardUIPrefab, opponentHandZone);
+
+                RectTransform rt = cardUI.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    // 扇状の位置計算（Cosの符号を反転して上開き扇形を実現）
+                    float angle = startAngle + (angleStep * i);
+                    float angleRad = angle * Mathf.Deg2Rad;
+
+                    float x = Mathf.Sin(angleRad) * fanRadius;
+                    float y = -Mathf.Cos(angleRad) * fanRadius + yOffset;  // 符号反転で上開き
+
+                    rt.anchoredPosition = new Vector2(x, y);
+                    rt.localRotation = Quaternion.Euler(0, 0, 180 + angle);  // 180度回転+扇形角度（プレイヤーから見て逆さま）
+                    rt.localScale = Vector3.one;
+                    // sizeDeltaはそのまま維持（CardUI親要素のImageを表示するため）
+                }
+
+                // 裏面表示: カード詳細を隠す
+                SetCardBackDisplay(cardUI);
+
+                opponentHandUICards.Add(cardUI);
+            }
+        }
+
+        /// <summary>
+        /// カードUIを裏面表示に設定（不要な子要素を削除）
+        /// </summary>
+        private void SetCardBackDisplay(GameObject cardUI)
+        {
+            if (cardUI == null) return;
+
+            // 不要な子要素（CardName, CardHP, CardImage）を全て削除
+            List<Transform> childrenToDestroy = new List<Transform>();
+            foreach (Transform child in cardUI.transform)
+            {
+                if (child.name == "CardName" || child.name == "CardHP" || child.name == "CardImage")
+                {
+                    childrenToDestroy.Add(child);
+                }
+            }
+            foreach (Transform child in childrenToDestroy)
+            {
+                DestroyImmediate(child.gameObject);
+            }
+
+            // CardUI自体（親要素）のImageコンポーネントを白にする
+            Image cardUIImage = cardUI.GetComponent<Image>();
+            if (cardUIImage != null)
+            {
+                cardUIImage.enabled = true;
+                cardUIImage.color = Color.white; // 白い背景
+            }
+            else
+            {
+                // Imageコンポーネントがない場合は追加
+                cardUIImage = cardUI.AddComponent<Image>();
+                cardUIImage.color = Color.white;
+            }
+
+            // カードの縁（Outline）を追加（濃い青黒縁で裏面を表現）
+            Outline outline = cardUI.GetComponent<Outline>();
+            if (outline == null)
+            {
+                outline = cardUI.AddComponent<Outline>();
+            }
+            outline.effectColor = new Color(0.15f, 0.2f, 0.35f); // 濃い青黒の縁
+            outline.effectDistance = new Vector2(4, 4);
+            outline.enabled = true;
         }
 
         private void UpdateActivePokemonDisplay(PlayerController player, bool isPlayer)
@@ -399,6 +509,7 @@ namespace PTCG
             }
         }
 
+
         private void UpdateCardVisual(GameObject cardUI, CardData cardData)
         {
             if (cardUI == null || cardData == null) return;
@@ -418,10 +529,9 @@ namespace PTCG
                     cardImage = child.GetComponent<Image>();
             }
 
-            // Update text（文字化け防止: クリア後に設定）
+            // Update text
             if (nameText != null)
             {
-                nameText.text = "";
                 nameText.text = cardData.cardName;
             }
 
@@ -429,8 +539,7 @@ namespace PTCG
             {
                 if (hpText != null)
                 {
-                    hpText.text = "";
-                    hpText.text = $"HP: {pkm.baseHP}";
+                    hpText.text = "HP: " + pkm.baseHP;
                 }
             }
             else
@@ -491,10 +600,9 @@ namespace PTCG
                     cardImage = child.GetComponent<Image>();
             }
 
-            // Update text（文字化け防止: クリア後に設定）
+            // Update text
             if (nameText != null)
             {
-                nameText.text = "";
                 nameText.text = pokemon.data.cardName;
             }
 
@@ -502,9 +610,8 @@ namespace PTCG
             {
                 if (hpText != null)
                 {
-                    hpText.text = "";
                     // 現在HP/最大HP形式で表示
-                    hpText.text = $"HP: {pokemon.RemainingHP}/{pokemon.MaxHP}";
+                    hpText.text = "HP: " + pokemon.RemainingHP + "/" + pokemon.MaxHP;
                 }
             }
             else
@@ -560,9 +667,8 @@ namespace PTCG
             else
             {
                 // stadiumInPlayにはcardID（例: "BeachCourt"）が入っているので、
-                // 対応する日本語名を取得（文字化け防止: クリア後に設定）
+                // 対応する日本語名を取得
                 string displayName = GetStadiumDisplayName(gm.stadiumInPlay);
-                stadiumText.text = "";
                 stadiumText.text = displayName;
             }
         }

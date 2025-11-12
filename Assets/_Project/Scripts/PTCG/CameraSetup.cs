@@ -18,8 +18,6 @@ namespace PTCG
                 cam.transform.position = new Vector3(0, 1, -10);
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.backgroundColor = Color.black;
-
-                Debug.Log("Main Camera created by CameraSetup");
             }
         }
     }

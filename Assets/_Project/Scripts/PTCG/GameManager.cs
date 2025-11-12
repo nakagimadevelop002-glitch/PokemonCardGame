@@ -50,8 +50,6 @@ namespace PTCG
 
         public void StartGame(List<CardData> deck1, List<CardData> deck2)
         {
-            Debug.Log("=== Game Start ===");
-
             // Initialize players
             player1.Initialize("Player1", 0, deck1);
             player2.Initialize("Player2", 1, deck2);
@@ -76,9 +74,6 @@ namespace PTCG
 
             turnCount = 1;
             currentPhase = "draw";
-
-            Debug.Log($"First player: Player{firstPlayerIndex + 1}");
-            Debug.Log("Game ready! Starting turn.");
 
             StartTurn();
         }
@@ -157,7 +152,6 @@ namespace PTCG
         {
             if (player.benchSlots.Count >= 5)
             {
-                Debug.Log($"{player.playerName}: ベンチが満員です");
                 return false;
             }
 
@@ -182,7 +176,6 @@ namespace PTCG
             }
 
             currentPhase = "main";
-            Debug.Log($"=== Turn {turnCount} - {current.playerName} ===");
 
             // AI自動起動
             if (current.isAI && AIController.Instance != null)
@@ -226,7 +219,6 @@ namespace PTCG
             if (active.statusCondition == StatusCondition.Poison)
             {
                 active.TakeDamage(10);
-                Debug.Log($"{active.data.cardName} took 10 poison damage");
             }
 
             // Burn: flip coin, 20 damage on heads
@@ -236,7 +228,6 @@ namespace PTCG
                 if (heads)
                 {
                     active.TakeDamage(20);
-                    Debug.Log($"{active.data.cardName} took 20 burn damage");
                 }
             }
 
@@ -247,11 +238,6 @@ namespace PTCG
                 if (heads)
                 {
                     active.statusCondition = StatusCondition.None;
-                    Debug.Log($"{player.playerName} の《{active.data.cardName}》は ねむり から目覚めた");
-                }
-                else
-                {
-                    Debug.Log($"{player.playerName} の《{active.data.cardName}》は ねむり 継続");
                 }
             }
 
@@ -262,7 +248,6 @@ namespace PTCG
                 if (active.paralysisTurns <= 0)
                 {
                     active.ClearStatus();
-                    Debug.Log($"{active.data.cardName}: まひ 回復");
                 }
             }
 
@@ -275,9 +260,6 @@ namespace PTCG
 
         public void KnockoutPokemon(PlayerController owner, PokemonInstance pokemon)
         {
-            // 詳細ログ: 誰のポケモンがきぜつ
-            Debug.Log($"【きぜつ】{owner.playerName}の《{pokemon.data.cardName}》がきぜつ！");
-
             // Move to discard
             owner.discard.Add(pokemon.data);
 
@@ -348,9 +330,6 @@ namespace PTCG
             }
             int prizesAfter = player.prizes.Count;
             int actualTaken = prizesBefore - prizesAfter;
-
-            // 詳細ログ: 誰が何枚サイド獲得→残り何枚
-            Debug.Log($"【サイド獲得】{player.playerName}が{actualTaken}枚獲得！(残りサイド: {prizesBefore}枚→{prizesAfter}枚)");
         }
 
         /// <summary>
@@ -363,7 +342,6 @@ namespace PTCG
             {
                 owner.activeSlot = owner.benchSlots[0];
                 owner.benchSlots.RemoveAt(0);
-                Debug.Log($"【強制交代】{owner.playerName}: ベンチから《{owner.activeSlot.data.cardName}》をバトル場へ（自動選択）");
                 if (UIManager.Instance != null) UIManager.Instance.UpdateUI();
                 return;
             }
@@ -387,8 +365,6 @@ namespace PTCG
                     var selectedPokemon = owner.benchSlots[selectedIndex];
                     owner.activeSlot = selectedPokemon;
                     owner.benchSlots.RemoveAt(selectedIndex);
-
-                    Debug.Log($"【強制交代】{owner.playerName}: ベンチから《{selectedPokemon.data.cardName}》をバトル場へ");
 
                     if (UIManager.Instance != null) UIManager.Instance.UpdateUI();
                 },
@@ -415,8 +391,6 @@ namespace PTCG
             winReason = reason;
 
             var winner = winnerPlayerIndex == 0 ? player1 : player2;
-            Debug.Log($"=== {winner.playerName} WINS! ===");
-            Debug.Log($"勝利理由: {reason}");
 
             // 勝敗確定時のモーダル表示
             ShowWinnerModal(winner, reason);
@@ -444,8 +418,6 @@ namespace PTCG
         /// </summary>
         public void RestartGame()
         {
-            Debug.Log("=== Game Restart ===");
-
             // 勝敗状態リセット
             winnerIndex = -1;
             winReason = "";

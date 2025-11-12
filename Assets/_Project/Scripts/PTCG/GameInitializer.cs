@@ -11,7 +11,7 @@ namespace PTCG
         public static GameInitializer Instance { get; private set; }
 
         public bool autoStartGame = true;
-        [Header("Test Mode (0=通常, 1=山札切れ, 2=サイド0, 3=場が空, 4=ベンチ選択, 5=UI表示)")]
+        [Header("Test Mode (0=通常, 1=山札切れ, 2=サイド0, 3=場が空, 4=ベンチ選択, 5=UI表示, 6=MewEXリスタート, 7=アドレナブレイン)")]
         public int testMode = 0;
 
         private void Awake()
@@ -26,8 +26,6 @@ namespace PTCG
 
         private void Start()
         {
-            Debug.Log("=== GameInitializer: Starting initialization ===");
-
             // GameManagerの作成
             if (GameManager.Instance == null)
             {
@@ -121,8 +119,6 @@ namespace PTCG
                 GameObject aiObj = new GameObject("AIController");
                 aiObj.AddComponent<AIController>();
             }
-
-            Debug.Log("=== All Systems Initialized ===");
 
             // UIManagerの初期化
             if (UIManager.Instance != null)
@@ -247,20 +243,16 @@ namespace PTCG
             switch (testMode)
             {
                 case 0:
-                    Debug.Log("[TEST MODE 0] 通常モード");
                     break;
 
                 case 1:
-                    Debug.Log("[TEST MODE 1] 山札切れテスト - player1の山札を2枚に設定");
                     while (player1.deck.Count > 2)
                     {
                         player1.deck.RemoveAt(player1.deck.Count - 1);
                     }
-                    Debug.Log($"[TEST] player1の山札: {player1.deck.Count}枚 → エンドターン → 次のターンでドロー → 山札切れ");
                     break;
 
                 case 2:
-                    Debug.Log("[TEST MODE 2] サイド0枚テスト - player2のサイドを1枚に、バトル場のHPを10に設定");
                     while (player2.prizes.Count > 1)
                     {
                         player2.deck.Add(player2.prizes[player2.prizes.Count - 1]);
@@ -280,11 +272,9 @@ namespace PTCG
                             player1.activeSlot.attachedEnergies.Add(basicPsychic);
                         }
                     }
-                    Debug.Log($"[TEST] player2のサイド: {player2.prizes.Count}枚, バトル場HP: 10 → 攻撃できぜつ → サイド0枚");
                     break;
 
                 case 3:
-                    Debug.Log("[TEST MODE 3] 場が空テスト - player2のベンチをクリア、バトル場のHPを10に設定");
                     player2.benchSlots.Clear();
                     if (player2.activeSlot != null)
                     {
@@ -300,11 +290,9 @@ namespace PTCG
                             player1.activeSlot.attachedEnergies.Add(basicPsychic);
                         }
                     }
-                    Debug.Log($"[TEST] player2のベンチ: 0匹, バトル場HP: 10 → 攻撃できぜつ → 場が空で勝利");
                     break;
 
                 case 4:
-                    Debug.Log("[TEST MODE 4] ベンチ選択テスト - player1のバトル場のHPを10に、ベンチを配置");
                     if (player1.activeSlot != null)
                     {
                         player1.activeSlot.currentDamage = player1.activeSlot.data.baseHP - 10;
@@ -319,15 +307,78 @@ namespace PTCG
                             player2.activeSlot.attachedEnergies.Add(basicPsychic);
                         }
                     }
-                    Debug.Log($"[TEST] player1のバトル場HP: 10, ベンチ: {player1.benchSlots.Count}匹 → 相手の攻撃できぜつ → ベンチ選択");
                     break;
 
                 case 5:
-                    Debug.Log("[TEST MODE 5] UI表示テスト - 通常モード（手札数・捨て札数の表示確認）");
+                    break;
+
+                case 6:
+                    // player1のバトル場にMewEXを配置
+                    PokemonCardData mewEX = Resources.Load<PokemonCardData>("PTCG/Pokemon/MewEX");
+                    if (mewEX != null)
+                    {
+                        // 既存のバトル場ポケモンを削除
+                        if (player1.activeSlot != null)
+                        {
+                            Destroy(player1.activeSlot.gameObject);
+                        }
+
+                        // MewEXを配置
+                        GameObject mewObj = new GameObject("MewEX");
+                        PokemonInstance mewInstance = mewObj.AddComponent<PokemonInstance>();
+                        mewInstance.Initialize(mewEX, player1.playerIndex);
+                        player1.activeSlot = mewInstance;
+                    }
+
+                    // player1の手札を2枚に減らす（リスタート発動条件）
+                    while (player1.hand.Count > 2)
+                    {
+                        player1.hand.RemoveAt(player1.hand.Count - 1);
+                    }
+                    break;
+
+                case 7:
+                    Debug.Log("[TEST MODE 7] ====== アドレナブレインテスト環境構築開始 ======");
+
+                    // player1のベンチにMashimashira配置
+                    PokemonCardData mashimashira = Resources.Load<PokemonCardData>("PTCG/Pokemon/Mashimashira");
+                    if (mashimashira != null)
+                    {
+                        GameObject mashiObj = new GameObject("Mashimashira");
+                        PokemonInstance mashiInstance = mashiObj.AddComponent<PokemonInstance>();
+                        mashiInstance.Initialize(mashimashira, player1.playerIndex);
+                        player1.benchSlots.Add(mashiInstance);
+
+                        Debug.Log("[TEST MODE 7] ✅ Player1ベンチにMashimashira配置");
+
+                        // 悪エネルギー付与（発動条件）
+                        EnergyCardData darkEnergy = Resources.Load<EnergyCardData>("PTCG/Energies/BasicDarkness");
+                        if (darkEnergy != null)
+                        {
+                            mashiInstance.attachedEnergies.Add(darkEnergy);
+                            Debug.Log("[TEST MODE 7] ✅ Mashimashiraに悪エネルギー付与");
+                        }
+                    }
+
+                    // player1のバトル場とベンチにダメージ付与（移動元）
+                    if (player1.activeSlot != null)
+                    {
+                        player1.activeSlot.currentDamage = 30; // ダメカン3個
+                        Debug.Log($"[TEST MODE 7] ✅ Player1バトル場({player1.activeSlot.data.cardName})にダメカン3個");
+                    }
+
+                    // ベンチの最初の2体にもダメージ
+                    for (int i = 0; i < Mathf.Min(2, player1.benchSlots.Count); i++)
+                    {
+                        player1.benchSlots[i].currentDamage = 20; // ダメカン2個
+                        Debug.Log($"[TEST MODE 7] ✅ Player1ベンチ{i + 1}({player1.benchSlots[i].data.cardName})にダメカン2個");
+                    }
+
+                    Debug.Log("[TEST MODE 7] ====== テスト環境構築完了 ======");
+                    Debug.Log("[TEST MODE 7] 使用方法: Player1のMashimashiraをクリック → 「特性: アドレナブレイン」を選択");
                     break;
 
                 default:
-                    Debug.Log($"[TEST MODE {testMode}] 未定義のテストモード");
                     break;
             }
 
@@ -349,35 +400,50 @@ namespace PTCG
         {
             int buttonCount = 0;
 
+            Debug.Log("[SetupFieldCardButtons] 開始");
+
             // PlayerActiveZoneのCardUIを取得
             GameObject playerActiveZone = GameObject.Find("PlayerActive");
             if (playerActiveZone != null)
             {
+                Debug.Log("[SetupFieldCardButtons] PlayerActive found");
                 foreach (Transform child in playerActiveZone.transform)
                 {
                     if (child.name.Contains("CardUI"))
                     {
+                        Debug.Log("[SetupFieldCardButtons] PlayerActive CardUI: " + child.name);
                         AddFieldCardButton(child.gameObject);
                         buttonCount++;
                     }
                 }
+            }
+            else
+            {
+                Debug.LogWarning("[SetupFieldCardButtons] PlayerActive not found");
             }
 
             // PlayerBenchのCardUIを取得
             GameObject playerBenchZone = GameObject.Find("PlayerBench");
             if (playerBenchZone != null)
             {
+                Debug.Log("[SetupFieldCardButtons] PlayerBench found, children count: " + playerBenchZone.transform.childCount);
                 foreach (Transform child in playerBenchZone.transform)
                 {
+                    Debug.Log("[SetupFieldCardButtons] PlayerBench child: " + child.name);
                     if (child.name.Contains("CardUI"))
                     {
+                        Debug.Log("[SetupFieldCardButtons] PlayerBench CardUI: " + child.name);
                         AddFieldCardButton(child.gameObject);
                         buttonCount++;
                     }
                 }
             }
+            else
+            {
+                Debug.LogWarning("[SetupFieldCardButtons] PlayerBench not found");
+            }
 
-            Debug.Log($"[TEST] {buttonCount}個のフィールドカードにButton追加完了");
+            Debug.Log("[SetupFieldCardButtons] 完了: " + buttonCount + "枚のカードにButton追加");
         }
 
         /// <summary>
@@ -512,7 +578,6 @@ namespace PTCG
             // 選択肢がない場合は何もしない
             if (options.Count == 0)
             {
-                Debug.Log($"《{cardName}》に実行可能な操作がありません");
                 return;
             }
 
@@ -522,12 +587,10 @@ namespace PTCG
                 options,
                 (selectedAction) =>
                 {
-                    Debug.Log($"[DEBUG] OnFieldCardClicked callback: selectedAction='{selectedAction}'");
                     if (selectedAction == null) return;
 
                     if (selectedAction == "attack")
                     {
-                        Debug.Log("[DEBUG] Executing attack...");
                         var opponent = gm.GetOpponentPlayer();
 
                         // 相手のバトル場チェック
@@ -555,7 +618,6 @@ namespace PTCG
 
                         if (benchOptions.Count == 0)
                         {
-                            Debug.Log("ベンチにポケモンがいません");
                             return;
                         }
 
@@ -591,8 +653,6 @@ namespace PTCG
         /// </summary>
         public void StartNewGame()
         {
-            Debug.Log("=== GameInitializer: Starting New Game ===");
-
             // テストデッキの作成
             List<CardData> deck1 = CreateTestDeck();
             List<CardData> deck2 = CreateTestDeck();

@@ -16,7 +16,6 @@ namespace PTCG
         {
             if (autoSetup)
             {
-                Debug.Log("[UIVisibilityEnhancer] Starting UI enhancement...");
                 EnhanceUI();
             }
         }
@@ -114,8 +113,6 @@ namespace PTCG
                     enhanced++;
                 }
             }
-
-            Debug.Log($"[UIVisibilityEnhancer] Enhanced {enhanced} UI elements");
         }
 
         private void SetRectSize(RectTransform rt, float width, float height)

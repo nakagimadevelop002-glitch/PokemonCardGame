@@ -8,8 +8,6 @@ public class AllMCPToolsBuilder : McpBuilderScriptableObject
 {
     public override void Build(IMcpServerBuilder builder)
     {
-        Debug.Log("AllMCPToolsBuilder: Registering all MCP tools...");
-
         // Register all MCP tools here
         builder.WithTools<CubeCreatorMCPTool>();
         builder.WithTools<SeaweedCreatorMCPTool>();
@@ -38,7 +36,6 @@ public class AllMCPToolsBuilder : McpBuilderScriptableObject
         builder.WithTools<GetChildrenMCPTool>();
         builder.WithTools<SetChildTextFontMCPTool>();
 
-        Debug.Log("AllMCPToolsBuilder: All 30 MCP tools registered successfully");
         // Add new MCP tools here in the future:
         // builder.WithTools<YourNewMCPTool>();
     }

@@ -92,6 +92,9 @@ namespace PTCG
         /// </summary>
         private bool UseAdrenaBrain(PlayerController player, PokemonInstance pokemon)
         {
+            Debug.Log($"[TEST] ====== アドレナブレイン発動開始 ======");
+            Debug.Log($"[TEST] 使用者: {player.playerName}, ポケモン: {pokemon.data.cardName}");
+
             // 条件：このポケモンに悪エネルギーがついている
             bool hasDarkEnergy = pokemon.attachedEnergies.Any(e =>
                 (e.isBasic && e.providesType == PokemonType.D) ||
@@ -102,6 +105,8 @@ namespace PTCG
                 Debug.Log("《アドレナブレイン》：このポケモンに悪エネルギーが付いていません");
                 return false;
             }
+
+            Debug.Log($"[TEST] ✅ 悪エネルギー確認: {pokemon.attachedEnergies.Count}個のエネルギー");
 
             var gm = GameManager.Instance;
             var opponent = player == gm.player1 ? gm.player2 : gm.player1;
@@ -114,6 +119,12 @@ namespace PTCG
                 return false;
             }
 
+            Debug.Log($"[TEST] ✅ ダメカンがあるポケモン: {sources.Count}体");
+            foreach (var p in sources)
+            {
+                Debug.Log($"[TEST]   - {p.data.cardName}: ダメカン{p.currentDamage / 10}個");
+            }
+
             // 相手の場のポケモン
             var targets = opponent.GetAllPokemons();
             if (targets.Count == 0)
@@ -122,11 +133,19 @@ namespace PTCG
                 return false;
             }
 
+            Debug.Log($"[TEST] ✅ 相手のポケモン: {targets.Count}体");
+            foreach (var t in targets)
+            {
+                Debug.Log($"[TEST]   - {t.data.cardName}: HP {t.data.baseHP - t.currentDamage}/{t.data.baseHP}");
+            }
+
             // 第1段階: 自分のポケモンからダメカンを最大2個選択
             var sourceOptions = sources.Select(p => new SelectOption<PokemonInstance>(
-                $"{p.data.cardName}（ダメカン{p.currentDamage / 10}個）",
+                p.data.cardName + "（ダメカン" + (p.currentDamage / 10) + "個）",
                 p
             )).ToList();
+
+            Debug.Log($"[TEST] 第1段階: モーダル表示 - ダメカンを取るポケモンを3個まで選択");
 
             ModalSystem.Instance.OpenMultiSelectModal(
                 "ダメカンを取るポケモンを3個まで選択",
@@ -140,6 +159,12 @@ namespace PTCG
                         return;
                     }
 
+                    Debug.Log($"[TEST] ✅ 第1段階選択完了: {selectedPokemons.Count}個のダメカンを選択");
+                    foreach (var p in selectedPokemons)
+                    {
+                        Debug.Log($"[TEST]   - {p.data.cardName}からダメカン1個を取る（残り{p.currentDamage / 10 - 1}個）");
+                    }
+
                     // 各ポケモンから10ダメージ（1個）ずつ減らす
                     int totalDamageToMove = selectedPokemons.Count * 10;
                     foreach (var p in selectedPokemons)
@@ -147,11 +172,15 @@ namespace PTCG
                         p.currentDamage = Mathf.Max(0, p.currentDamage - 10);
                     }
 
+                    Debug.Log($"[TEST] 移動するダメージ合計: {totalDamageToMove}（ダメカン{totalDamageToMove / 10}個）");
+
                     // 第2段階: 相手のポケモンを1匹選択
                     var targetOptions = targets.Select(p => new SelectOption<PokemonInstance>(
-                        $"{p.data.cardName}（HP {p.data.baseHP - p.currentDamage}/{p.data.baseHP}）",
+                        p.data.cardName + "（HP " + (p.data.baseHP - p.currentDamage) + "/" + p.data.baseHP + "）",
                         p
                     )).ToList();
+
+                    Debug.Log($"[TEST] 第2段階: モーダル表示 - ダメカンを乗せる相手のポケモンを選択");
 
                     ModalSystem.Instance.OpenSelectModal(
                         "ダメカンを乗せる相手のポケモンを選択",
@@ -164,13 +193,19 @@ namespace PTCG
                                 return;
                             }
 
+                            Debug.Log($"[TEST] ✅ 第2段階選択完了: {selectedTarget.data.cardName}を選択");
+                            Debug.Log($"[TEST] 移動前: {selectedTarget.data.cardName} HP {selectedTarget.data.baseHP - selectedTarget.currentDamage}/{selectedTarget.data.baseHP}");
+
                             // ダメージを乗せる
                             selectedTarget.currentDamage += totalDamageToMove;
-                            Debug.Log($"→ アドレナブレイン: ダメカン{selectedPokemons.Count}個を《{selectedTarget.data.cardName}》へ移動");
+
+                            Debug.Log($"[TEST] 移動後: {selectedTarget.data.cardName} HP {selectedTarget.data.baseHP - selectedTarget.currentDamage}/{selectedTarget.data.baseHP}");
+                            Debug.Log($"[TEST] ====== アドレナブレイン完了: ダメカン{selectedPokemons.Count}個を《{selectedTarget.data.cardName}》へ移動 ======");
 
                             // きぜつチェック
                             if (selectedTarget.IsKnockedOut)
                             {
+                                Debug.Log($"[TEST] ⚠️ {selectedTarget.data.cardName}がきぜつ！");
                                 gm.KnockoutPokemon(opponent, selectedTarget);
                             }
 
@@ -341,7 +376,7 @@ namespace PTCG
 
             // 対象を選択
             var targetOptions = psychicPokemons.Select(p => new SelectOption<PokemonInstance>(
-                $"{p.data.cardName}（HP {p.MaxHP - p.currentDamage}/{p.MaxHP}）",
+                p.data.cardName + "（HP " + (p.MaxHP - p.currentDamage) + "/" + p.MaxHP + "）",
                 p
             )).ToList();
 

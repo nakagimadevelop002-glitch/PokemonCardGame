@@ -52,8 +52,6 @@ namespace PTCG
 
             // === 右側UI ===
             CreateRightSideUI(canvasObj.transform);
-
-            Debug.Log("PTCG UI Built Successfully!");
         }
 
         void CreateOpponentArea(Transform parent)

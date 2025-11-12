@@ -10,13 +10,11 @@ namespace PTCG
     {
         private void Awake()
         {
-            Debug.Log("UISetupHelper: Awake called");
             SetupUIElements();
         }
 
         private void Start()
         {
-            Debug.Log("UISetupHelper: Start called");
             SetupUIElements();
         }
 
@@ -76,8 +74,6 @@ namespace PTCG
 
             // テキストの色とサイズを調整
             SetupTextElements();
-
-            Debug.Log("UI setup completed by UISetupHelper");
         }
 
         private void SetPanelProperties(string panelName, Vector2 size, Color color)
