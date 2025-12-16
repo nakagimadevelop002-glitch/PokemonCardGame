@@ -15,6 +15,9 @@ namespace PTCG
         [Header("Auto Select Mode")]
         public bool autoSelectMode = false; // 手動選択モード
 
+        // スクロールUI閾値（選択肢がこの数以上でスクロールUI使用）
+        private const int SCROLL_THRESHOLD = 3;
+
         // SelectModal UI要素キャッシュ（非アクティブでも参照可能）
         private GameObject selectModalPanel;
         private Text titleText;
@@ -23,6 +26,22 @@ namespace PTCG
         private GameObject optionButtonTemplate;
         private Button confirmButton; // 複数選択時の確認ボタン
         private Text selectionCountText; // 選択数表示
+
+        // ScrollModal UI要素キャッシュ（スクロール版モーダル）
+        private GameObject selectModalScrollPanel;
+        private Text scrollTitleText;
+        private Transform scrollContent; // ScrollContent（VerticalLayoutGroup付き）
+        private Button scrollCancelButton;
+        private GameObject scrollOptionTemplate;
+        private Button scrollConfirmButton;
+        private Text scrollSelectionCountText;
+
+        // ConfirmModal UI要素キャッシュ
+        private GameObject confirmModalPanel;
+        private Text confirmTitleText;
+        private Text confirmMessageText;
+        private Button yesButton;
+        private Button noButton;
 
         private void Awake()
         {
@@ -41,18 +60,13 @@ namespace PTCG
                 // Canvas/GraphicRaycaster確認と自動追加
                 Canvas canvas = selectModalPanel.GetComponentInParent<Canvas>();
                 GraphicRaycaster raycaster = selectModalPanel.GetComponentInParent<GraphicRaycaster>();
-                Debug.Log("[ModalSystem] SelectModalPanel Canvas: " + (canvas != null ? "OK" : "NULL"));
-                Debug.Log("[ModalSystem] SelectModalPanel GraphicRaycaster: " + (raycaster != null ? "OK" : "NULL"));
 
                 if (canvas != null && raycaster == null)
                 {
-                    Debug.LogWarning("[ModalSystem] GraphicRaycasterが見つかりません。自動的に追加します。");
                     raycaster = canvas.gameObject.AddComponent<GraphicRaycaster>();
-                    Debug.Log("[ModalSystem] GraphicRaycaster追加完了");
                 }
                 else if (canvas == null)
                 {
-                    Debug.LogError("[ModalSystem] SelectModalPanelの親Canvasが見つかりません。UIクリックが動作しません。");
                 }
                 // 正しく表示されているCardNameTextからフォント設定をコピー
                 GameObject cardNameTextObj = GameObject.Find("CardNameText");
@@ -115,7 +129,7 @@ namespace PTCG
                     }
                 }
 
-                // CancelButton配下のText要素を名前で取得してフォント設定
+                // CancelButton配下のText要素を名前で取得してフォント設定と日本語テキスト設定
                 if (cancelButton != null && correctFont != null)
                 {
                     Text[] cancelTexts = selectModalPanel.GetComponentsInChildren<Text>(true);
@@ -124,6 +138,9 @@ namespace PTCG
                         if (text.transform.parent == cancelButton.transform)
                         {
                             text.font = correctFont;
+                            // 文字化け対策: C#スクリプト内で日本語テキスト設定
+                            text.text = "";
+                            text.text = "キャンセル";
                         }
                     }
                 }
@@ -133,7 +150,6 @@ namespace PTCG
             }
             else
             {
-                Debug.LogError("[ModalSystem] SelectModalPanel not found in scene");
             }
 
             // OptionButtonTemplate初期非表示
@@ -158,6 +174,18 @@ namespace PTCG
                     {
                         confirmButton = btn;
                         confirmButton.gameObject.SetActive(false); // 初期非表示（複数選択時のみ表示）
+
+                        // ConfirmButton配下のText要素に日本語テキスト設定（文字化け対策）
+                        if (correctFont != null)
+                        {
+                            Text confirmText = confirmButton.GetComponentInChildren<Text>(true);
+                            if (confirmText != null)
+                            {
+                                confirmText.font = correctFont;
+                                confirmText.text = "";
+                                confirmText.text = "決定";
+                            }
+                        }
                         break;
                     }
                 }
@@ -173,6 +201,113 @@ namespace PTCG
                         break;
                     }
                 }
+            }
+
+            // ConfirmModalPanel UI要素をキャッシュ
+            confirmModalPanel = GameObject.Find("ConfirmModalPanel");
+            if (confirmModalPanel != null)
+            {
+                Transform modalWindow = confirmModalPanel.transform.Find("ModalWindow");
+                if (modalWindow != null)
+                {
+                    confirmTitleText = modalWindow.Find("TitleText")?.GetComponent<Text>();
+                    confirmMessageText = modalWindow.Find("MessageText")?.GetComponent<Text>();
+                    yesButton = modalWindow.Find("YesButton")?.GetComponent<Button>();
+                    noButton = modalWindow.Find("NoButton")?.GetComponent<Button>();
+                }
+
+                confirmModalPanel.SetActive(false);
+            }
+            else
+            {
+            }
+
+            // ScrollModalPanel UI要素をキャッシュ
+            selectModalScrollPanel = GameObject.Find("SelectModalScrollPanel");
+            if (selectModalScrollPanel != null)
+            {
+                // フォント取得（SelectModalPanelと同じフォントを使用）
+                Font correctFont = null;
+                if (titleText != null && titleText.font != null)
+                {
+                    correctFont = titleText.font;
+                }
+
+                Transform scrollModalWindow = selectModalScrollPanel.transform.Find("ScrollModalWindow");
+                if (scrollModalWindow != null)
+                {
+                    // ScrollTitleText
+                    scrollTitleText = scrollModalWindow.Find("ScrollTitleText")?.GetComponent<Text>();
+                    if (scrollTitleText != null && correctFont != null)
+                    {
+                        scrollTitleText.font = correctFont;
+                    }
+
+                    // ScrollView > Viewport > ScrollContent
+                    Transform scrollView = scrollModalWindow.Find("ScrollView");
+                    if (scrollView != null)
+                    {
+                        Transform viewport = scrollView.Find("Viewport");
+                        if (viewport != null)
+                        {
+                            scrollContent = viewport.Find("ScrollContent");
+                            if (scrollContent != null)
+                            {
+                                // ScrollOptionTemplate
+                                scrollOptionTemplate = scrollContent.Find("ScrollOptionTemplate")?.gameObject;
+                                if (scrollOptionTemplate != null)
+                                {
+                                    scrollOptionTemplate.SetActive(false); // 初期非表示
+                                    Text btnText = scrollOptionTemplate.GetComponentInChildren<Text>(true);
+                                    if (btnText != null && correctFont != null)
+                                    {
+                                        btnText.font = correctFont;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ScrollCancelButton
+                    scrollCancelButton = scrollModalWindow.Find("ScrollCancelButton")?.GetComponent<Button>();
+                    if (scrollCancelButton != null && correctFont != null)
+                    {
+                        Text cancelText = scrollCancelButton.GetComponentInChildren<Text>(true);
+                        if (cancelText != null)
+                        {
+                            cancelText.font = correctFont;
+                            cancelText.text = "";
+                            cancelText.text = "キャンセル";
+                        }
+                    }
+
+                    // ScrollConfirmButton
+                    scrollConfirmButton = scrollModalWindow.Find("ScrollConfirmButton")?.GetComponent<Button>();
+                    if (scrollConfirmButton != null)
+                    {
+                        scrollConfirmButton.gameObject.SetActive(false); // 初期非表示（複数選択時のみ表示）
+                        if (correctFont != null)
+                        {
+                            Text confirmText = scrollConfirmButton.GetComponentInChildren<Text>(true);
+                            if (confirmText != null)
+                            {
+                                confirmText.font = correctFont;
+                                confirmText.text = "";
+                                confirmText.text = "決定";
+                            }
+                        }
+                    }
+
+                    // ScrollSelectionCountText
+                    scrollSelectionCountText = scrollModalWindow.Find("ScrollSelectionCountText")?.GetComponent<Text>();
+                    if (scrollSelectionCountText != null)
+                    {
+                        if (correctFont != null) scrollSelectionCountText.font = correctFont;
+                        scrollSelectionCountText.gameObject.SetActive(false); // 初期非表示（複数選択時のみ表示）
+                    }
+                }
+
+                selectModalScrollPanel.SetActive(false); // 初期非表示
             }
 
         }
@@ -247,8 +382,34 @@ namespace PTCG
         /// <param name="callback">結果コールバック（true=Yes, false=No）</param>
         public void OpenConfirmModal(string title, string message, Action<bool> callback)
         {
-            // 常にデフォルトYes（UI未実装）
-            callback(true);
+            if (confirmModalPanel == null || confirmTitleText == null || confirmMessageText == null ||
+                yesButton == null || noButton == null)
+            {
+                callback(true);
+                return;
+            }
+
+            // UI要素設定
+            confirmTitleText.text = title;
+            confirmMessageText.text = message;
+
+            // ボタンクリックリスナー設定
+            yesButton.onClick.RemoveAllListeners();
+            yesButton.onClick.AddListener(() =>
+            {
+                confirmModalPanel.SetActive(false);
+                callback(true);
+            });
+
+            noButton.onClick.RemoveAllListeners();
+            noButton.onClick.AddListener(() =>
+            {
+                confirmModalPanel.SetActive(false);
+                callback(false);
+            });
+
+            // モーダル表示
+            confirmModalPanel.SetActive(true);
         }
 
 
@@ -257,17 +418,22 @@ namespace PTCG
         /// </summary>
         private void ShowSelectModal<T>(string title, List<SelectOption<T>> options, Action<T> callback)
         {
+            if (options.Count >= SCROLL_THRESHOLD)
+            {
+                ShowSelectModalScroll(title, options, callback);
+                return;
+            }
+
+            // ★既存のコードはそのまま（一切変更しない）★
             // キャッシュからUI要素取得
             if (selectModalPanel == null)
             {
-                Debug.LogError("[ModalSystem] SelectModalPanel not found");
                 callback(default(T));
                 return;
             }
 
             if (titleText == null || optionsContainer == null || cancelButton == null || optionButtonTemplate == null)
             {
-                Debug.LogError("[ModalSystem] UI elements not found - titleText:" + (titleText != null ? "OK" : "NULL") + ", optionsContainer:" + (optionsContainer != null ? "OK" : "NULL") + ", cancelButton:" + (cancelButton != null ? "OK" : "NULL") + ", optionButtonTemplate:" + (optionButtonTemplate != null ? "OK" : "NULL"));
                 callback(default(T));
                 return;
             }
@@ -372,25 +538,21 @@ namespace PTCG
         /// </summary>
         private void ShowSelectModalMulti<T>(string title, List<SelectOption<T>> options, int maxCount, Action<List<T>> callback)
         {
-            Debug.Log("[ShowSelectModalMulti] 開始");
-            Debug.Log("[ShowSelectModalMulti] selectModalPanel: " + (selectModalPanel != null ? "OK" : "NULL"));
-            Debug.Log("[ShowSelectModalMulti] titleText: " + (titleText != null ? "OK" : "NULL"));
-            Debug.Log("[ShowSelectModalMulti] optionsContainer: " + (optionsContainer != null ? "OK" : "NULL"));
-            Debug.Log("[ShowSelectModalMulti] optionButtonTemplate: " + (optionButtonTemplate != null ? "OK" : "NULL"));
-            Debug.Log("[ShowSelectModalMulti] confirmButton: " + (confirmButton != null ? "OK" : "NULL"));
-            Debug.Log("[ShowSelectModalMulti] selectionCountText: " + (selectionCountText != null ? "OK" : "NULL"));
+            Debug.Log("[DEBUG] ShowSelectModalMulti called - options.Count: " + options.Count + ", SCROLL_THRESHOLD: " + SCROLL_THRESHOLD);
 
+            if (options.Count >= SCROLL_THRESHOLD)
+            {
+                Debug.Log("[DEBUG] Using SCROLL UI (options.Count >= SCROLL_THRESHOLD)");
+                ShowSelectModalMultiScroll(title, options, maxCount, callback);
+                return;
+            }
+
+            Debug.Log("[DEBUG] Using FIXED UI (options.Count < SCROLL_THRESHOLD)");
+
+            // ★既存のコードはそのまま（一切変更しない）★
             if (selectModalPanel == null || titleText == null || optionsContainer == null ||
                 optionButtonTemplate == null || confirmButton == null || selectionCountText == null)
             {
-                Debug.LogError("[ModalSystem] SelectModalPanel UI elements not found for multi-select");
-                Debug.LogError("[ModalSystem] Missing elements: " +
-                    (selectModalPanel == null ? "selectModalPanel " : "") +
-                    (titleText == null ? "titleText " : "") +
-                    (optionsContainer == null ? "optionsContainer " : "") +
-                    (optionButtonTemplate == null ? "optionButtonTemplate " : "") +
-                    (confirmButton == null ? "confirmButton " : "") +
-                    (selectionCountText == null ? "selectionCountText " : ""));
                 callback(new List<T>());
                 return;
             }
@@ -439,11 +601,9 @@ namespace PTCG
                 {
                     toggle.targetGraphic = toggleImage;
                     toggleImage.raycastTarget = true; // クリックイベント検知に必須
-                    Debug.Log("[ShowSelectModalMulti] toggleImage.raycastTarget設定: " + option.label);
                 }
                 else
                 {
-                    Debug.LogWarning("[ShowSelectModalMulti] toggleImage not found for " + option.label);
                 }
 
                 // Checkmark用のImageを動的に作成（選択状態の視覚的フィードバック）
@@ -470,7 +630,6 @@ namespace PTCG
                 colors.selectedColor = new Color(0.8f, 1f, 0.8f, 1f);
                 toggle.colors = colors;
 
-                Debug.Log("[ShowSelectModalMulti] Toggle設定完了: " + option.label + " targetGraphic=" + (toggle.targetGraphic != null ? "OK" : "NULL") + " graphic=" + (toggle.graphic != null ? "OK" : "NULL"));
 
                 Text toggleText = toggleObj.GetComponentInChildren<Text>(true);
                 if (toggleText != null)
@@ -485,25 +644,21 @@ namespace PTCG
 
                 // トグル変更時の選択数更新
                 toggle.onValueChanged.AddListener((isOn) => {
-                    Debug.Log("[ShowSelectModalMulti] Toggle変更: " + option.label + " isOn=" + isOn);
 
                     if (isOn && !selectedValues.Contains(option.value))
                     {
                         if (selectedValues.Count < maxCount)
                         {
                             selectedValues.Add(option.value);
-                            Debug.Log("[ShowSelectModalMulti] 選択追加: " + option.label + " (現在" + selectedValues.Count + "個)");
                         }
                         else
                         {
                             toggle.isOn = false;
-                            Debug.Log("[ShowSelectModalMulti] 選択上限到達: " + maxCount + "個");
                         }
                     }
                     else if (!isOn && selectedValues.Contains(option.value))
                     {
                         selectedValues.Remove(option.value);
-                        Debug.Log("[ShowSelectModalMulti] 選択解除: " + option.label + " (現在" + selectedValues.Count + "個)");
                     }
 
                     // 選択数表示更新
@@ -511,7 +666,6 @@ namespace PTCG
 
                     // 決定ボタンの有効/無効
                     confirmButton.interactable = selectedValues.Count > 0 && selectedValues.Count <= maxCount;
-                    Debug.Log("[ShowSelectModalMulti] confirmButton.interactable=" + confirmButton.interactable);
                 });
 
                 // Y位置設定
@@ -522,7 +676,6 @@ namespace PTCG
                 }
             }
 
-            Debug.Log("[ShowSelectModalMulti] トグルボタン生成完了: " + options.Count + "個");
 
             // 初期状態: 選択数0
             selectionCountText.text = "0 / " + maxCount + "個選択";
@@ -530,12 +683,10 @@ namespace PTCG
             confirmButton.interactable = false;
             confirmButton.gameObject.SetActive(true); // 複数選択時は表示
 
-            Debug.Log("[ShowSelectModalMulti] 初期状態設定完了: 選択数0、confirmButton無効");
 
             // 決定ボタン
             confirmButton.onClick.RemoveAllListeners();
             confirmButton.onClick.AddListener(() => {
-                Debug.Log("[ShowSelectModalMulti] confirmButtonクリック: 選択数=" + selectedValues.Count);
                 callback(new List<T>(selectedValues));
                 confirmButton.gameObject.SetActive(false);
                 selectionCountText.gameObject.SetActive(false);
@@ -556,6 +707,239 @@ namespace PTCG
 
             // パネル表示
             selectModalPanel.SetActive(true);
+        }
+
+        /// <summary>
+        /// スクロール版単一選択モーダルUI表示
+        /// </summary>
+        private void ShowSelectModalScroll<T>(string title, List<SelectOption<T>> options, Action<T> callback)
+        {
+            if (selectModalScrollPanel == null || scrollTitleText == null || scrollContent == null ||
+                scrollCancelButton == null || scrollOptionTemplate == null)
+            {
+                callback(default(T));
+                return;
+            }
+
+            // タイトル設定
+            scrollTitleText.text = title;
+
+            // 既存ボタンクリア（テンプレート以外）
+            foreach (Transform child in scrollContent)
+            {
+                if (child.gameObject != scrollOptionTemplate)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
+            // 正しいフォントを取得
+            Font correctFont = scrollTitleText.font;
+
+            // ボタン動的生成（VerticalLayoutGroupが自動配置）
+            for (int i = 0; i < options.Count; i++)
+            {
+                SelectOption<T> option = options[i];
+                GameObject btn = Instantiate(scrollOptionTemplate, scrollContent);
+                btn.name = "ScrollOption_" + i;
+                btn.SetActive(true);
+
+                Text btnText = btn.GetComponentInChildren<Text>(true);
+                if (btnText != null)
+                {
+                    if (correctFont != null) btnText.font = correctFont;
+                    string displayText = option.label;
+                    if (option.disabled && !string.IsNullOrEmpty(option.disabledReason))
+                    {
+                        displayText += " (" + option.disabledReason + ")";
+                    }
+                    btnText.text = displayText;
+
+                    if (option.disabled) btnText.color = Color.gray;
+                }
+
+                Button button = btn.GetComponent<Button>();
+                if (button != null)
+                {
+                    button.interactable = !option.disabled;
+                    button.onClick.RemoveAllListeners();
+                    button.onClick.AddListener(() => {
+                        selectModalScrollPanel.SetActive(false);
+                        callback(option.value);
+                    });
+                }
+            }
+
+            // キャンセルボタン
+            scrollCancelButton.onClick.RemoveAllListeners();
+            scrollCancelButton.onClick.AddListener(() => {
+                selectModalScrollPanel.SetActive(false);
+                callback(default(T));
+            });
+
+            // テンプレート非表示
+            scrollOptionTemplate.SetActive(false);
+
+            // パネル表示
+            selectModalScrollPanel.SetActive(true);
+        }
+
+        /// <summary>
+        /// スクロール版複数選択モーダルUI表示
+        /// </summary>
+        private void ShowSelectModalMultiScroll<T>(string title, List<SelectOption<T>> options, int maxCount, Action<List<T>> callback)
+        {
+            Debug.Log("[DEBUG] ShowSelectModalMultiScroll called - options.Count: " + options.Count);
+            Debug.Log("[DEBUG] Null check - selectModalScrollPanel: " + (selectModalScrollPanel == null) +
+                      ", scrollTitleText: " + (scrollTitleText == null) +
+                      ", scrollContent: " + (scrollContent == null) +
+                      ", scrollOptionTemplate: " + (scrollOptionTemplate == null) +
+                      ", scrollConfirmButton: " + (scrollConfirmButton == null) +
+                      ", scrollSelectionCountText: " + (scrollSelectionCountText == null));
+
+            if (selectModalScrollPanel == null || scrollTitleText == null || scrollContent == null ||
+                scrollOptionTemplate == null || scrollConfirmButton == null || scrollSelectionCountText == null)
+            {
+                Debug.LogError("[DEBUG] Null check FAILED - returning empty list");
+                callback(new List<T>());
+                return;
+            }
+
+            Debug.Log("[DEBUG] Null check PASSED - proceeding with UI generation");
+
+            // タイトル設定
+            scrollTitleText.text = title;
+
+            // 既存ボタンクリア（テンプレート以外）
+            foreach (Transform child in scrollContent)
+            {
+                if (child.gameObject != scrollOptionTemplate)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
+            Font correctFont = scrollTitleText.font;
+            List<T> selectedValues = new List<T>();
+
+            Debug.Log("[DEBUG] Starting option generation loop - options.Count: " + options.Count);
+
+            // トグルボタン動的生成（VerticalLayoutGroupが自動配置）
+            for (int i = 0; i < options.Count; i++)
+            {
+                SelectOption<T> option = options[i];
+                Debug.Log("[DEBUG] Generating option " + i + ": " + option.label);
+                GameObject toggleObj = Instantiate(scrollOptionTemplate, scrollContent);
+                toggleObj.name = "ScrollOption_" + i;
+                toggleObj.SetActive(true);
+                Debug.Log("[DEBUG] Option " + i + " instantiated and activated");
+
+                // Button削除
+                Button existingButton = toggleObj.GetComponent<Button>();
+                if (existingButton != null) DestroyImmediate(existingButton);
+
+                // Toggle追加
+                UnityEngine.UI.Toggle toggle = toggleObj.GetComponent<UnityEngine.UI.Toggle>();
+                if (toggle == null)
+                {
+                    toggle = toggleObj.AddComponent<UnityEngine.UI.Toggle>();
+                    toggle.isOn = false;
+                }
+
+                // targetGraphic設定
+                Image toggleImage = toggleObj.GetComponent<Image>();
+                if (toggleImage != null)
+                {
+                    toggle.targetGraphic = toggleImage;
+                    toggleImage.raycastTarget = true;
+                }
+
+                // Checkmark作成
+                GameObject checkmarkObj = new GameObject("Checkmark");
+                checkmarkObj.transform.SetParent(toggleObj.transform, false);
+                Image checkmarkImage = checkmarkObj.AddComponent<Image>();
+                checkmarkImage.color = new Color(0.2f, 1f, 0.2f, 1f);
+
+                RectTransform checkmarkRT = checkmarkObj.GetComponent<RectTransform>();
+                checkmarkRT.anchorMin = new Vector2(0.9f, 0.1f);
+                checkmarkRT.anchorMax = new Vector2(0.95f, 0.9f);
+                checkmarkRT.offsetMin = Vector2.zero;
+                checkmarkRT.offsetMax = Vector2.zero;
+
+                checkmarkImage.gameObject.SetActive(false);
+                toggle.graphic = checkmarkImage;
+
+                // Toggle transitions設定
+                toggle.transition = UnityEngine.UI.Selectable.Transition.ColorTint;
+                ColorBlock colors = toggle.colors;
+                colors.normalColor = new Color(1f, 1f, 1f, 1f);
+                colors.highlightedColor = new Color(0.8f, 0.8f, 1f, 1f);
+                colors.pressedColor = new Color(0.6f, 0.6f, 1f, 1f);
+                colors.selectedColor = new Color(0.8f, 1f, 0.8f, 1f);
+                toggle.colors = colors;
+
+                Text toggleText = toggleObj.GetComponentInChildren<Text>(true);
+                if (toggleText != null)
+                {
+                    if (correctFont != null) toggleText.font = correctFont;
+                    toggleText.text = option.label;
+                    if (option.disabled) toggleText.color = Color.gray;
+                }
+
+                toggle.interactable = !option.disabled;
+
+                // トグル変更時の選択数更新
+                toggle.onValueChanged.AddListener((isOn) => {
+                    if (isOn && !selectedValues.Contains(option.value))
+                    {
+                        if (selectedValues.Count < maxCount)
+                        {
+                            selectedValues.Add(option.value);
+                        }
+                        else
+                        {
+                            toggle.isOn = false;
+                        }
+                    }
+                    else if (!isOn && selectedValues.Contains(option.value))
+                    {
+                        selectedValues.Remove(option.value);
+                    }
+
+                    scrollSelectionCountText.text = selectedValues.Count + " / " + maxCount + "個選択";
+                    scrollConfirmButton.interactable = selectedValues.Count > 0 && selectedValues.Count <= maxCount;
+                });
+            }
+
+            // 初期状態: 選択数0
+            scrollSelectionCountText.text = "0 / " + maxCount + "個選択";
+            scrollSelectionCountText.gameObject.SetActive(true);
+            scrollConfirmButton.interactable = false;
+            scrollConfirmButton.gameObject.SetActive(true);
+
+            // 決定ボタン
+            scrollConfirmButton.onClick.RemoveAllListeners();
+            scrollConfirmButton.onClick.AddListener(() => {
+                callback(new List<T>(selectedValues));
+                scrollConfirmButton.gameObject.SetActive(false);
+                scrollSelectionCountText.gameObject.SetActive(false);
+                selectModalScrollPanel.SetActive(false);
+            });
+
+            // キャンセルボタン
+            scrollCancelButton.onClick.RemoveAllListeners();
+            scrollCancelButton.onClick.AddListener(() => {
+                callback(new List<T>());
+                scrollConfirmButton.gameObject.SetActive(false);
+                scrollSelectionCountText.gameObject.SetActive(false);
+                selectModalScrollPanel.SetActive(false);
+            });
+
+            // テンプレート非表示
+            scrollOptionTemplate.SetActive(false);
+
+            // パネル表示
+            selectModalScrollPanel.SetActive(true);
         }
 
     }

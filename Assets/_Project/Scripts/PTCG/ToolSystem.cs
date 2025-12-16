@@ -30,14 +30,12 @@ namespace PTCG
         {
             if (target == null)
             {
-                Debug.Log("装備先のポケモンを選択してください");
                 return false;
             }
 
             // すでにどうぐが付いているか
             if (target.attachedTool != null)
             {
-                Debug.Log($"{target.data.cardName}にはすでにどうぐ《{target.attachedTool.cardName}》が付いています");
                 return false;
             }
 
@@ -47,7 +45,6 @@ namespace PTCG
 
             if (toolCard == null)
             {
-                Debug.Log("手札にポケモンのどうぐがありません");
                 return false;
             }
 
@@ -55,7 +52,6 @@ namespace PTCG
             player.hand.Remove(toolCard);
             target.attachedTool = toolCard;
 
-            Debug.Log($"{player.playerName}: 《{toolCard.cardName}》を《{target.data.cardName}》に装備");
 
             // いさぎのふんどし（BraveryCharm）効果
             // HP計算はPokemonInstance.MaxHPプロパティで自動処理されるため、ここでは何もしない
@@ -70,30 +66,25 @@ namespace PTCG
         {
             if (target == null)
             {
-                Debug.Log("装備先のポケモンを選択してください");
                 return false;
             }
 
             if (toolCard.trainerType != TrainerType.Tool)
             {
-                Debug.Log($"{toolCard.cardName}はポケモンのどうぐではありません");
                 return false;
             }
 
             if (target.attachedTool != null)
             {
-                Debug.Log($"{target.data.cardName}にはすでにどうぐ《{target.attachedTool.cardName}》が付いています");
                 return false;
             }
 
             if (!player.hand.Remove(toolCard))
             {
-                Debug.LogError($"{toolCard.cardName}が手札にありません");
                 return false;
             }
 
             target.attachedTool = toolCard;
-            Debug.Log($"{player.playerName}: 《{toolCard.cardName}》を《{target.data.cardName}》に装備");
 
             return true;
         }
@@ -114,7 +105,6 @@ namespace PTCG
             // トラッシュへ
             player.discard.Add(tool);
 
-            Debug.Log($"{pokemon.data.cardName}から《{tool.cardName}》を取り外しました");
             return true;
         }
     }

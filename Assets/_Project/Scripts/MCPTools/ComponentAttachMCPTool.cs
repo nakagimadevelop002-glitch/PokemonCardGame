@@ -11,10 +11,10 @@ using UnityEditor.SceneManagement;
 [McpServerToolType, System.ComponentModel.Description("Attach Unity components to GameObjects")]
 public class ComponentAttachMCPTool
 {
-    [McpServerTool, System.ComponentModel.Description("Attach a script to a specific GameObject by name")]
+    [McpServerTool, System.ComponentModel.Description("Attach a component to a specific GameObject by name")]
     public async ValueTask<string> AttachScriptToObject(
         [System.ComponentModel.Description("Target GameObject name")] string objectName,
-        [System.ComponentModel.Description("Script class name (must be MonoBehaviour)")] string scriptClassName)
+        [System.ComponentModel.Description("Component class name (any Component type)")] string scriptClassName)
     {
         try
         {
@@ -42,9 +42,10 @@ public class ComponentAttachMCPTool
                 return $"ERROR: Script class '{scriptClassName}' not found";
             }
 
-            if (!typeof(MonoBehaviour).IsAssignableFrom(scriptType))
+            // Component型チェック（MonoBehaviourだけでなく全Component対応）
+            if (!typeof(UnityEngine.Component).IsAssignableFrom(scriptType))
             {
-                return $"ERROR: '{scriptClassName}' is not a MonoBehaviour script";
+                return $"ERROR: '{scriptClassName}' is not a Component type";
             }
 
             UnityEngine.Component existingComponent = obj.GetComponent(scriptType);
@@ -54,7 +55,7 @@ public class ComponentAttachMCPTool
             }
 
             UnityEngine.Component component = obj.AddComponent(scriptType);
-            Debug.Log($"Attached script '{scriptClassName}' to GameObject '{objectName}'");
+            Debug.Log($"Attached component '{scriptClassName}' to GameObject '{objectName}'");
 
 #if UNITY_EDITOR
             var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
@@ -72,10 +73,10 @@ public class ComponentAttachMCPTool
         }
     }
 
-    [McpServerTool, System.ComponentModel.Description("Attach a script to all GameObjects with a specific tag")]
+    [McpServerTool, System.ComponentModel.Description("Attach a component to all GameObjects with a specific tag")]
     public async ValueTask<string> AttachScriptToObjectsWithTag(
         [System.ComponentModel.Description("Target tag name")] string tag,
-        [System.ComponentModel.Description("Script class name (must be MonoBehaviour)")] string scriptClassName)
+        [System.ComponentModel.Description("Component class name (any Component type)")] string scriptClassName)
     {
         try
         {
@@ -103,9 +104,10 @@ public class ComponentAttachMCPTool
                 return $"ERROR: Script class '{scriptClassName}' not found";
             }
 
-            if (!typeof(MonoBehaviour).IsAssignableFrom(scriptType))
+            // Component型チェック（MonoBehaviourだけでなく全Component対応）
+            if (!typeof(UnityEngine.Component).IsAssignableFrom(scriptType))
             {
-                return $"ERROR: '{scriptClassName}' is not a MonoBehaviour script";
+                return $"ERROR: '{scriptClassName}' is not a Component type";
             }
 
             int attachedCount = 0;
@@ -193,7 +195,7 @@ public class ComponentAttachMCPTool
         }
     }
 
-    [McpServerTool, System.ComponentModel.Description("List all available MonoBehaviour scripts in the project")]
+    [McpServerTool, System.ComponentModel.Description("List all available Component types in the project")]
     public async ValueTask<string> ListAvailableScripts()
     {
         try
@@ -203,16 +205,16 @@ public class ComponentAttachMCPTool
             var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
             var scripts = assemblies
                 .SelectMany(assembly => assembly.GetTypes())
-                .Where(type => typeof(MonoBehaviour).IsAssignableFrom(type) && !type.IsAbstract)
+                .Where(type => typeof(UnityEngine.Component).IsAssignableFrom(type) && !type.IsAbstract)
                 .OrderBy(type => type.Name)
                 .ToList();
 
             if (scripts.Count == 0)
             {
-                return "No MonoBehaviour scripts found";
+                return "No Component types found";
             }
 
-            string result = $"Found {scripts.Count} MonoBehaviour scripts:\n";
+            string result = $"Found {scripts.Count} Component types:\n";
             foreach (Type script in scripts)
             {
                 result += $"- {script.Name} ({script.Namespace})\n";
@@ -222,7 +224,7 @@ public class ComponentAttachMCPTool
         }
         catch (Exception e)
         {
-            Debug.LogError($"Failed to list scripts: {e.Message}");
+            Debug.LogError($"Failed to list components: {e.Message}");
             return $"ERROR: {e.Message}";
         }
     }

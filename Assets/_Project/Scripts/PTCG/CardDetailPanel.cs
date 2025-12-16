@@ -162,7 +162,6 @@ namespace PTCG
                 }
             }
 
-            // Debug.Log($"Showing card detail: {cardData.cardName}");
         }
 
         /// <summary>
@@ -175,7 +174,6 @@ namespace PTCG
                 panelRoot.SetActive(false);
             }
 
-            // Debug.Log("Hiding card detail");
         }
 
         private string GetTypeName(PokemonType type)

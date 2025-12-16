@@ -27,13 +27,11 @@ namespace PTCG
         {
             if (player.energyAttachedThisTurn)
             {
-                Debug.Log("このターンは手貼り済み");
                 return false;
             }
 
             if (target == null)
             {
-                Debug.Log("対象のポケモンを選択してください");
                 return false;
             }
 
@@ -41,7 +39,6 @@ namespace PTCG
             var energyCard = player.hand.OfType<EnergyCardData>().FirstOrDefault();
             if (energyCard == null)
             {
-                Debug.Log("手札に付けられるエネルギーがありません");
                 return false;
             }
 
@@ -50,7 +47,6 @@ namespace PTCG
             target.AttachEnergy(energyCard);
             player.energyAttachedThisTurn = true;
 
-            Debug.Log($"{player.playerName}: 《{energyCard.cardName}》を《{target.data.cardName}》につけた（手貼り）");
             return true;
         }
 
@@ -77,7 +73,6 @@ namespace PTCG
         {
             if (!CanUsePsychicEmbrace(player, target))
             {
-                Debug.Log("サイコエンブレイスの条件未達");
                 return false;
             }
 
@@ -92,7 +87,6 @@ namespace PTCG
             target.AttachEnergy(psychicEnergy);
             target.TakeDamage(20);
 
-            Debug.Log($"{player.playerName}: サイコエンブレイス → 《{target.data.cardName}》に超エネ+1＆ダメカン20");
             return true;
         }
 
@@ -158,7 +152,6 @@ namespace PTCG
 
             if (pokemon.attachedEnergies.Count < retreatCost)
             {
-                Debug.Log($"エネルギーが足りません（必要: {retreatCost}、現在: {pokemon.attachedEnergies.Count}）");
                 return false;
             }
 
@@ -173,7 +166,6 @@ namespace PTCG
                 }
             }
 
-            Debug.Log($"{pokemon.data.cardName}がにげるコスト{retreatCost}を支払いました");
             return true;
         }
     }

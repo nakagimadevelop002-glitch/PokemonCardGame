@@ -32,7 +32,6 @@ namespace PTCG
             // 進化先が1進化or2進化でない場合は失敗
             if (evolutionCard.stage != PokemonStage.Stage1 && evolutionCard.stage != PokemonStage.Stage2)
             {
-                Debug.LogError("進化先がStage1/Stage2ではありません");
                 return false;
             }
 
@@ -41,14 +40,12 @@ namespace PTCG
             {
                 if (evolutionCard.evolvesFrom != target.data.cardName)
                 {
-                    Debug.Log($"→ 進化に失敗（{target.data.cardName}から{evolutionCard.cardName}には進化できません）");
                     return false;
                 }
 
                 // このターンに出したばかりは進化不可
                 if (target.turnsInPlay <= 0)
                 {
-                    Debug.Log("→ 出したばかりは進化不可");
                     return false;
                 }
             }
@@ -58,14 +55,12 @@ namespace PTCG
                 // たねから2進化のみ
                 if (target.data.stage != PokemonStage.Basic || evolutionCard.stage != PokemonStage.Stage2)
                 {
-                    Debug.Log("→ ふしぎなアメは たね→2進化 のみ");
                     return false;
                 }
 
                 // このターンに出したばかりは不可
                 if (target.wasPlayedThisTurn)
                 {
-                    Debug.Log("→ このターンに出したたねには《ふしぎなアメ》不可");
                     return false;
                 }
 
@@ -73,7 +68,6 @@ namespace PTCG
                 // 簡易実装: evolvesFromフィールドを信頼
                 if (string.IsNullOrEmpty(evolutionCard.evolvesFrom))
                 {
-                    Debug.Log("→ 進化に失敗（進化系統が不明）");
                     return false;
                 }
             }
@@ -117,7 +111,6 @@ namespace PTCG
             // 旧ポケモンを破棄
             Destroy(target.gameObject);
 
-            Debug.Log($"{player.playerName}: {target.data.cardName} → {newPokemon.data.cardName} に進化{(viaRareCandy ? "（ふしぎなアメ）" : "")}");
         }
 
         /// <summary>

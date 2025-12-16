@@ -11,7 +11,7 @@ namespace PTCG
         public static GameInitializer Instance { get; private set; }
 
         public bool autoStartGame = true;
-        [Header("Test Mode (0=通常, 1=山札切れ, 2=サイド0, 3=場が空, 4=ベンチ選択, 5=UI表示, 6=MewEXリスタート, 7=アドレナブレイン)")]
+        [Header("Test Mode (0=通常, 1=山札切れ, 2=サイド0, 3=場が空, 4=ベンチ選択, 5=UI表示, 6=MewEXリスタート, 7=アドレナブレイン, 8=勝利直前)")]
         public int testMode = 0;
 
         private void Awake()
@@ -205,13 +205,8 @@ namespace PTCG
             AddCards(deck, basicPsychic, 18); // テスト用調整: 24 → 18（テスト用トレーナー5枚追加により）
             AddCards(deck, reversalEnergy, 2);
 
-            // Debug.Log($"Gardevoir EX deck created: {deck.Count} cards");
 
             // デバッグ: 各カードの読み込み状態を確認
-            // Debug.Log($"Ralts loaded: {ralts != null}, name: {ralts?.cardName}");
-            // Debug.Log($"HyperBall loaded: {hyperBall != null}, name: {hyperBall?.cardName}");
-            // Debug.Log($"Research loaded: {research != null}, name: {research?.cardName}");
-            // Debug.Log($"BasicPsychic loaded: {basicPsychic != null}, name: {basicPsychic?.cardName}");
 
             return deck;
         }
@@ -227,7 +222,6 @@ namespace PTCG
             }
             else
             {
-                Debug.LogWarning($"Card is null, skipping {count} cards");
             }
         }
 
@@ -313,6 +307,7 @@ namespace PTCG
                     break;
 
                 case 6:
+                {
                     // player1のバトル場にMewEXを配置
                     PokemonCardData mewEX = Resources.Load<PokemonCardData>("PTCG/Pokemon/MewEX");
                     if (mewEX != null)
@@ -335,10 +330,10 @@ namespace PTCG
                     {
                         player1.hand.RemoveAt(player1.hand.Count - 1);
                     }
+                }
                     break;
 
                 case 7:
-                    Debug.Log("[TEST MODE 7] ====== アドレナブレインテスト環境構築開始 ======");
 
                     // player1のベンチにMashimashira配置
                     PokemonCardData mashimashira = Resources.Load<PokemonCardData>("PTCG/Pokemon/Mashimashira");
@@ -349,14 +344,12 @@ namespace PTCG
                         mashiInstance.Initialize(mashimashira, player1.playerIndex);
                         player1.benchSlots.Add(mashiInstance);
 
-                        Debug.Log("[TEST MODE 7] ✅ Player1ベンチにMashimashira配置");
 
                         // 悪エネルギー付与（発動条件）
                         EnergyCardData darkEnergy = Resources.Load<EnergyCardData>("PTCG/Energies/BasicDarkness");
                         if (darkEnergy != null)
                         {
                             mashiInstance.attachedEnergies.Add(darkEnergy);
-                            Debug.Log("[TEST MODE 7] ✅ Mashimashiraに悪エネルギー付与");
                         }
                     }
 
@@ -364,18 +357,72 @@ namespace PTCG
                     if (player1.activeSlot != null)
                     {
                         player1.activeSlot.currentDamage = 30; // ダメカン3個
-                        Debug.Log($"[TEST MODE 7] ✅ Player1バトル場({player1.activeSlot.data.cardName})にダメカン3個");
                     }
 
                     // ベンチの最初の2体にもダメージ
                     for (int i = 0; i < Mathf.Min(2, player1.benchSlots.Count); i++)
                     {
                         player1.benchSlots[i].currentDamage = 20; // ダメカン2個
-                        Debug.Log($"[TEST MODE 7] ✅ Player1ベンチ{i + 1}({player1.benchSlots[i].data.cardName})にダメカン2個");
                     }
 
-                    Debug.Log("[TEST MODE 7] ====== テスト環境構築完了 ======");
-                    Debug.Log("[TEST MODE 7] 使用方法: Player1のMashimashiraをクリック → 「特性: アドレナブレイン」を選択");
+                    break;
+
+                case 8:
+                {
+
+                    // player1（ユーザー側）のバトル場をミュウEXに置き換える
+                    if (player1.activeSlot != null)
+                    {
+                        Destroy(player1.activeSlot.gameObject);
+                    }
+                    PokemonCardData mewEX = Resources.Load<PokemonCardData>("PTCG/Pokemon/MewEX");
+                    if (mewEX != null)
+                    {
+                        GameObject mewObj = new GameObject("MewEX");
+                        PokemonInstance mewInstance = mewObj.AddComponent<PokemonInstance>();
+                        mewInstance.Initialize(mewEX, player1.playerIndex);
+                        player1.activeSlot = mewInstance;
+                    }
+                    else
+                    {
+                    }
+
+                    // player1（ユーザー側）のサイドを1枚にする
+                    while (player1.prizes.Count > 1)
+                    {
+                        player1.deck.Add(player1.prizes[player1.prizes.Count - 1]);
+                        player1.prizes.RemoveAt(player1.prizes.Count - 1);
+                    }
+
+                    // player2（AI側）のバトル場にダメージ与える（60ダメージ = HP10残り）
+                    if (player2.activeSlot != null)
+                    {
+                        player2.activeSlot.currentDamage = 60; // 残りHP10
+                    }
+
+                    // player1（ユーザー側）のバトル場にエネルギー3個付与（攻撃可能にする）
+                    if (player1.activeSlot != null)
+                    {
+                        EnergyCardData psychicEnergy = Resources.Load<EnergyCardData>("PTCG/Energies/BasicPsychic");
+                        if (psychicEnergy != null)
+                        {
+                            for (int i = 0; i < 3; i++)
+                            {
+                                player1.activeSlot.attachedEnergies.Add(psychicEnergy);
+                            }
+                        }
+                        else
+                        {
+                        }
+                    }
+                    else
+                    {
+                    }
+
+                    // 先攻1ターン目攻撃不可を回避：turnCountを2にする
+                    gm.turnCount = 2;
+
+                }
                     break;
 
                 default:
@@ -400,18 +447,15 @@ namespace PTCG
         {
             int buttonCount = 0;
 
-            Debug.Log("[SetupFieldCardButtons] 開始");
 
             // PlayerActiveZoneのCardUIを取得
             GameObject playerActiveZone = GameObject.Find("PlayerActive");
             if (playerActiveZone != null)
             {
-                Debug.Log("[SetupFieldCardButtons] PlayerActive found");
                 foreach (Transform child in playerActiveZone.transform)
                 {
                     if (child.name.Contains("CardUI"))
                     {
-                        Debug.Log("[SetupFieldCardButtons] PlayerActive CardUI: " + child.name);
                         AddFieldCardButton(child.gameObject);
                         buttonCount++;
                     }
@@ -419,20 +463,16 @@ namespace PTCG
             }
             else
             {
-                Debug.LogWarning("[SetupFieldCardButtons] PlayerActive not found");
             }
 
             // PlayerBenchのCardUIを取得
             GameObject playerBenchZone = GameObject.Find("PlayerBench");
             if (playerBenchZone != null)
             {
-                Debug.Log("[SetupFieldCardButtons] PlayerBench found, children count: " + playerBenchZone.transform.childCount);
                 foreach (Transform child in playerBenchZone.transform)
                 {
-                    Debug.Log("[SetupFieldCardButtons] PlayerBench child: " + child.name);
                     if (child.name.Contains("CardUI"))
                     {
-                        Debug.Log("[SetupFieldCardButtons] PlayerBench CardUI: " + child.name);
                         AddFieldCardButton(child.gameObject);
                         buttonCount++;
                     }
@@ -440,10 +480,8 @@ namespace PTCG
             }
             else
             {
-                Debug.LogWarning("[SetupFieldCardButtons] PlayerBench not found");
             }
 
-            Debug.Log("[SetupFieldCardButtons] 完了: " + buttonCount + "枚のカードにButton追加");
         }
 
         /// <summary>
@@ -457,7 +495,17 @@ namespace PTCG
             {
                 btn = cardUI.AddComponent<UnityEngine.UI.Button>();
                 btn.transition = UnityEngine.UI.Selectable.Transition.None;
-                btn.targetGraphic = null;
+
+                // ImageコンポーネントをtargetGraphicに設定（クリック検知に必須）
+                UnityEngine.UI.Image img = cardUI.GetComponent<UnityEngine.UI.Image>();
+                if (img != null)
+                {
+                    btn.targetGraphic = img;
+                    img.raycastTarget = true; // クリック検知を有効化
+                }
+                else
+                {
+                }
 
                 // クリックイベント
                 btn.onClick.AddListener(() => OnFieldCardClicked(cardUI));
@@ -510,6 +558,15 @@ namespace PTCG
         /// </summary>
         private void OnFieldCardClicked(GameObject cardUI)
         {
+            var gm = GameManager.Instance;
+            var currentPlayer = gm.GetCurrentPlayer();
+
+            // AIターン中はクリック無効
+            if (currentPlayer == null || currentPlayer.isAI)
+            {
+                return;
+            }
+
             // カード名からPokemonInstanceを検索
             string cardName = null;
             UnityEngine.UI.Text[] texts = cardUI.GetComponentsInChildren<UnityEngine.UI.Text>();
@@ -524,16 +581,15 @@ namespace PTCG
 
             if (string.IsNullOrEmpty(cardName))
             {
-                Debug.LogWarning("Card name not found");
                 return;
             }
 
-            // PokemonInstanceを検索
+            // PokemonInstanceを検索（currentPlayerのポケモンのみ）
             PokemonInstance[] allPokemons = FindObjectsByType<PokemonInstance>(FindObjectsSortMode.None);
             PokemonInstance targetPokemon = null;
             foreach (var pokemon in allPokemons)
             {
-                if (pokemon.data.cardName == cardName)
+                if (pokemon.data.cardName == cardName && pokemon.ownerIndex == currentPlayer.playerIndex)
                 {
                     targetPokemon = pokemon;
                     break;
@@ -542,12 +598,8 @@ namespace PTCG
 
             if (targetPokemon == null)
             {
-                Debug.LogWarning($"Pokemon not found: {cardName}");
                 return;
             }
-
-            var gm = GameManager.Instance;
-            var currentPlayer = gm.GetCurrentPlayer();
 
             // 選択肢リスト作成
             var options = new List<SelectOption<string>>();
@@ -558,6 +610,12 @@ namespace PTCG
                 // 攻撃（常に表示、不可能な場合はdisabled）
                 bool canAttack = BattleSystem.Instance.CanAttack(currentPlayer);
                 string attackDisabledReason = canAttack ? "" : BattleSystem.Instance.GetAttackDisabledReason(currentPlayer);
+
+                // デバッグログ: 攻撃可否の詳細
+                if (targetPokemon.data.attacks != null && targetPokemon.data.attacks.Count > 0)
+                {
+                }
+
                 options.Add(new SelectOption<string>("攻撃する", "attack", !canAttack, attackDisabledReason));
 
                 // にげる（常に表示、不可能な場合はdisabled）
@@ -596,7 +654,6 @@ namespace PTCG
                         // 相手のバトル場チェック
                         if (opponent.activeSlot == null)
                         {
-                            Debug.LogWarning("攻撃失敗: 相手のバトル場にポケモンがいません");
                             return;
                         }
 

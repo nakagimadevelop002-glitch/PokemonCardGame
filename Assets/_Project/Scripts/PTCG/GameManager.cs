@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 namespace PTCG
@@ -20,6 +21,8 @@ namespace PTCG
         public int turnCount;
         public string currentPhase = "setup"; // setup, draw, main, end
         public string stadiumInPlay;
+        public TrainerCardData stadiumCardData; // 場のスタジアムCardData（トラッシュ処理用）
+        public int stadiumOwnerIndex = -1; // スタジアムを使ったプレイヤー（-1 = なし）
 
         [Header("Winner")]
         public int winnerIndex = -1; // -1 = no winner
@@ -44,7 +47,6 @@ namespace PTCG
                 cam.transform.position = new Vector3(0, 1, -10);
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.backgroundColor = Color.black;
-                // Debug.Log("Main Camera created by GameManager");
             }
         }
 
@@ -60,7 +62,6 @@ namespace PTCG
 
             if (!p1Valid || !p2Valid)
             {
-                Debug.LogError("Setup failed: no basic pokemon");
                 return;
             }
 
@@ -75,17 +76,24 @@ namespace PTCG
             turnCount = 1;
             currentPhase = "draw";
 
+            // Debug log: Initial hand count
+            Debug.Log("[GAME START] P1: Mulligan " + player1.mulligansGiven + ", Hand " + player1.hand.Count + " | P2: Mulligan " + player2.mulligansGiven + ", Hand " + player2.hand.Count);
+
             StartTurn();
         }
 
         private bool SetupPlayer(PlayerController player)
         {
-            player.Draw(7);
+            // 既存の手札を考慮して7枚になるように調整（マリガンボーナスドロー対応）
+            int cardsNeeded = 7 - player.hand.Count;
+            if (cardsNeeded > 0)
+            {
+                player.Draw(cardsNeeded);
+            }
 
             // Mulligan check
             while (!player.HasBasicInHand())
             {
-                // Debug.Log($"{player.playerName} has no basic - mulligan");
                 player.mulligansGiven++;
 
                 // Opponent draws 1 extra
@@ -100,7 +108,6 @@ namespace PTCG
 
                 if (player.mulligansGiven >= 10)
                 {
-                    Debug.LogError($"{player.playerName} too many mulligans - auto lose");
                     return false;
                 }
             }
@@ -142,7 +149,6 @@ namespace PTCG
             PokemonInstance instance = go.AddComponent<PokemonInstance>();
             instance.Initialize(data, player.playerIndex);
             player.activeSlot = instance;
-            // Debug.Log($"{player.playerName} placed {data.cardName} as active");
         }
 
         /// <summary>
@@ -159,13 +165,16 @@ namespace PTCG
             PokemonInstance instance = go.AddComponent<PokemonInstance>();
             instance.Initialize(data, player.playerIndex);
             player.benchSlots.Add(instance);
-            // Debug.Log($"{player.playerName} placed {data.cardName} on bench (bench count: {player.benchSlots.Count})");
             return true;
         }
 
         public void StartTurn()
         {
             PlayerController current = GetCurrentPlayer();
+
+            // Debug log: Turn start hand count
+            Debug.Log("[TURN " + turnCount + " START] P1: Hand " + player1.hand.Count + " | P2: Hand " + player2.hand.Count + " | Current: " + current.playerName);
+
             current.OnNewTurn();
 
             // Draw phase (skip first turn for first player in PTCG rules)
@@ -414,38 +423,12 @@ namespace PTCG
         }
 
         /// <summary>
-        /// ゲームを最初から再スタート
+        /// ゲームを最初から再スタート（シーン再ロード）
         /// </summary>
         public void RestartGame()
         {
-            // 勝敗状態リセット
-            winnerIndex = -1;
-            winReason = "";
-            turnCount = 0;
-            currentPhase = "setup";
-            stadiumInPlay = "";
-
-            // プレイヤー状態リセット
-            if (player1 != null)
-            {
-                CleanupPlayer(player1);
-            }
-            if (player2 != null)
-            {
-                CleanupPlayer(player2);
-            }
-
-            // UI完全リセット
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.UpdateUI();
-            }
-
-            // ゲーム再開
-            if (GameInitializer.Instance != null)
-            {
-                GameInitializer.Instance.StartNewGame();
-            }
+            // シーン再ロードで完全リセット
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         /// <summary>

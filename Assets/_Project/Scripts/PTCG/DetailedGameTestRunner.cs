@@ -23,7 +23,6 @@ namespace PTCG
 
         private IEnumerator RunDetailedTests()
         {
-            Debug.Log("=== 詳細ロジックテスト開始 ===");
             yield return new WaitForSeconds(testDelay);
 
             // Test 1: 進化システム詳細テスト
@@ -46,17 +45,14 @@ namespace PTCG
             yield return TestAttackDamageCalculation();
             yield return new WaitForSeconds(testDelay);
 
-            Debug.Log("=== 詳細テスト完了 ===");
         }
 
         private IEnumerator TestEvolutionDetail()
         {
-            Debug.Log("[詳細Test 1] 進化システム詳細テスト");
 
             var evoSystem = EvolutionSystem.Instance;
             if (evoSystem == null)
             {
-                Debug.LogError("✗ EvolutionSystem未配置");
                 yield break;
             }
 
@@ -64,7 +60,6 @@ namespace PTCG
             var raltsData = Resources.Load<PokemonCardData>("PTCG/Pokemon/Ralts");
             if (raltsData == null)
             {
-                Debug.LogError("✗ Raltsアセット未配置");
                 yield break;
             }
 
@@ -81,7 +76,6 @@ namespace PTCG
             // ダメージ追加
             raltsInstance.TakeDamage(20);
 
-            Debug.Log($"  進化前: {raltsInstance.data.cardName}, HP: {raltsInstance.currentDamage}/{raltsInstance.MaxHP}, エネルギー: {raltsInstance.attachedEnergies.Count}個");
 
             // Kirlia進化（アセットがあれば）
             var kirliaData = Resources.Load<PokemonCardData>("PTCG/Pokemon/Kirlia");
@@ -100,19 +94,15 @@ namespace PTCG
                 {
                     evoSystem.Evolve(player, raltsInstance, kirliaData, false);
                     var evolved = player.benchSlots[0];
-                    Debug.Log($"✓ 進化成功: {evolved.data.cardName}, HP: {evolved.currentDamage}/{evolved.MaxHP}, エネルギー: {evolved.attachedEnergies.Count}個");
-                    Debug.Log($"  ダメージ・エネルギー引き継ぎ確認完了");
                 }
                 else
                 {
-                    Debug.LogWarning("  進化条件未達");
                 }
 
                 Destroy(player.gameObject);
             }
             else
             {
-                Debug.Log("  （Kirliaアセット未配置 - 進化テストスキップ）");
             }
 
             Destroy(raltsInstance.gameObject);
@@ -121,19 +111,16 @@ namespace PTCG
 
         private IEnumerator TestPsychicEmbraceAbility()
         {
-            Debug.Log("[詳細Test 2] サイコエンブレイス特性テスト");
 
             var energySystem = EnergySystem.Instance;
             if (energySystem == null)
             {
-                Debug.LogError("✗ EnergySystem未配置");
                 yield break;
             }
 
             var gardevoirData = Resources.Load<PokemonCardData>("PTCG/Pokemon/GardevoirEX");
             if (gardevoirData == null)
             {
-                Debug.Log("  （GardevoirEXアセット未配置 - スキップ）");
                 yield break;
             }
 
@@ -151,18 +138,15 @@ namespace PTCG
             psychicEnergy.providesType = PokemonType.P;
             player.discard.Add(psychicEnergy);
 
-            Debug.Log($"  実行前: トラッシュ {player.discard.Count}枚, ダメカン {gardevoir.currentDamage}");
 
             // サイコエンブレイス実行
             bool success = energySystem.UsePsychicEmbrace(player, gardevoir);
 
             if (success)
             {
-                Debug.Log($"✓ サイコエンブレイス成功: トラッシュ {player.discard.Count}枚, ダメカン {gardevoir.currentDamage}（+20想定）");
             }
             else
             {
-                Debug.LogWarning("  サイコエンブレイス失敗（条件未達）");
             }
 
             Destroy(gardevoir.gameObject);
@@ -172,12 +156,10 @@ namespace PTCG
 
         private IEnumerator TestWeaknessResistance()
         {
-            Debug.Log("[詳細Test 3] 弱点・抵抗力計算テスト");
 
             var battleSystem = BattleSystem.Instance;
             if (battleSystem == null)
             {
-                Debug.LogError("✗ BattleSystem未配置");
                 yield break;
             }
 
@@ -227,10 +209,7 @@ namespace PTCG
 
             // GameManager必要なので簡易実装をスキップ
             // 代わりに直接ダメージテスト
-            Debug.Log($"  基本ダメージ: 50");
             defender.TakeDamage(100); // 弱点適用後の想定ダメージ
-            Debug.Log($"  弱点適用想定ダメージ: {defender.currentDamage}（超タイプx2 = 100想定）");
-            Debug.Log("✓ ダメージ計算ロジック確認（弱点・抵抗力はBattleSystem内部で処理）");
 
             Destroy(attacker.gameObject);
             Destroy(defender.gameObject);
@@ -241,37 +220,29 @@ namespace PTCG
 
         private IEnumerator TestHyperBall()
         {
-            Debug.Log("[詳細Test 4] ハイパーボールテスト（モーダル選択システム）");
 
             var cardPlaySystem = CardPlaySystem.Instance;
             var modalSystem = ModalSystem.Instance;
 
             if (cardPlaySystem == null)
             {
-                Debug.LogError("✗ CardPlaySystem未配置");
                 yield break;
             }
 
             if (modalSystem == null)
             {
-                Debug.Log("  （ModalSystem未配置 - オプション機能）");
             }
 
-            Debug.Log("✓ CardPlaySystem存在確認");
-            Debug.Log("  ハイパーボールは CardPlaySystem.PlayCard 経由で使用可能");
-            Debug.Log("  （実際のモーダル選択はUI実装後に機能）");
 
             yield return null;
         }
 
         private IEnumerator TestAttackDamageCalculation()
         {
-            Debug.Log("[詳細Test 5] 攻撃ダメージ計算詳細テスト");
 
             var battleSystem = BattleSystem.Instance;
             if (battleSystem == null)
             {
-                Debug.LogError("✗ BattleSystem未配置");
                 yield break;
             }
 
@@ -295,23 +266,17 @@ namespace PTCG
                 if (drifloonData.attacks != null && drifloonData.attacks.Count > 0)
                 {
                     var attack = drifloonData.attacks[0];
-                    Debug.Log($"  Drifloon 攻撃: {attack.attackName}");
-                    Debug.Log($"  ダメカン: {attacker.currentDamage}");
-                    Debug.Log($"  effectID: {attack.effectID}");
 
                     if (attack.effectID == "selfCountersX30")
                     {
                         int expectedDamage = (attacker.currentDamage / 10) * 30;
-                        Debug.Log($"✓ selfCountersX30計算式確認: ({attacker.currentDamage}/10) x 30 = {expectedDamage}");
                     }
                     else
                     {
-                        Debug.Log($"  基本ダメージ: {attack.baseDamage}");
                     }
                 }
                 else
                 {
-                    Debug.Log("  （攻撃データなし）");
                 }
 
                 Destroy(attacker.gameObject);
@@ -319,7 +284,6 @@ namespace PTCG
             }
             else
             {
-                Debug.Log("  （Drifloonアセット未配置 - スキップ）");
             }
 
             yield return null;

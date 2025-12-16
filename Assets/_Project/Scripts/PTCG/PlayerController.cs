@@ -57,7 +57,6 @@ namespace PTCG
                 deck[i] = deck[j];
                 deck[j] = temp;
             }
-            // Debug.Log($"{playerName} shuffled deck");
         }
 
         public bool Draw(int count)
@@ -66,7 +65,6 @@ namespace PTCG
             {
                 if (deck.Count == 0)
                 {
-                    Debug.LogError($"{playerName} deck out! Loses the game.");
 
                     // 山札切れ判定：相手の勝利
                     var gm = GameManager.Instance;
@@ -81,7 +79,6 @@ namespace PTCG
                 hand.Add(deck[deck.Count - 1]);
                 deck.RemoveAt(deck.Count - 1);
             }
-            // Debug.Log($"{playerName} drew {count} cards");
             return true;
         }
 
@@ -93,7 +90,6 @@ namespace PTCG
                 prizes.Add(deck[deck.Count - 1]);
                 deck.RemoveAt(deck.Count - 1);
             }
-            // Debug.Log($"{playerName} set {prizes.Count} prizes");
         }
 
         public bool HasBasicInHand()

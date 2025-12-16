@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -27,21 +28,18 @@ namespace PTCG
         {
             if (pokemon == null)
             {
-                Debug.Log("対象のポケモンを選択してください");
                 return false;
             }
 
             var ability = pokemon.data.abilities.Find(a => a.abilityID == abilityID);
             if (ability == null)
             {
-                Debug.Log("このポケモンに使える特性はありません");
                 return false;
             }
 
             // Once-per-turn チェック
             if (ability.oncePerTurn && pokemon.abilityUsedFlags.ContainsKey(abilityID) && pokemon.abilityUsedFlags[abilityID])
             {
-                Debug.Log($"このターンは《{ability.abilityName}》をすでに使用しました");
                 return false;
             }
 
@@ -71,11 +69,9 @@ namespace PTCG
 
                 case "fairy_zone":
                     // 常駐特性（場にいるだけで効果）
-                    Debug.Log("《フェアリーゾーン》は常駐特性です");
                     return false;
 
                 default:
-                    Debug.Log($"特性《{abilityID}》は未実装です");
                     return false;
             }
 
@@ -92,8 +88,6 @@ namespace PTCG
         /// </summary>
         private bool UseAdrenaBrain(PlayerController player, PokemonInstance pokemon)
         {
-            Debug.Log($"[TEST] ====== アドレナブレイン発動開始 ======");
-            Debug.Log($"[TEST] 使用者: {player.playerName}, ポケモン: {pokemon.data.cardName}");
 
             // 条件：このポケモンに悪エネルギーがついている
             bool hasDarkEnergy = pokemon.attachedEnergies.Any(e =>
@@ -102,11 +96,9 @@ namespace PTCG
 
             if (!hasDarkEnergy)
             {
-                Debug.Log("《アドレナブレイン》：このポケモンに悪エネルギーが付いていません");
                 return false;
             }
 
-            Debug.Log($"[TEST] ✅ 悪エネルギー確認: {pokemon.attachedEnergies.Count}個のエネルギー");
 
             var gm = GameManager.Instance;
             var opponent = player == gm.player1 ? gm.player2 : gm.player1;
@@ -115,105 +107,101 @@ namespace PTCG
             var sources = player.GetAllPokemons().Where(p => p.currentDamage >= 10).ToList();
             if (sources.Count == 0)
             {
-                Debug.Log("→ 自分の場にダメカンがあるポケモンがいません");
                 return false;
             }
 
-            Debug.Log($"[TEST] ✅ ダメカンがあるポケモン: {sources.Count}体");
             foreach (var p in sources)
             {
-                Debug.Log($"[TEST]   - {p.data.cardName}: ダメカン{p.currentDamage / 10}個");
             }
 
             // 相手の場のポケモン
             var targets = opponent.GetAllPokemons();
             if (targets.Count == 0)
             {
-                Debug.Log("→ 相手の場にポケモンがいません");
                 return false;
             }
 
-            Debug.Log($"[TEST] ✅ 相手のポケモン: {targets.Count}体");
             foreach (var t in targets)
             {
-                Debug.Log($"[TEST]   - {t.data.cardName}: HP {t.data.baseHP - t.currentDamage}/{t.data.baseHP}");
             }
 
-            // 第1段階: 自分のポケモンからダメカンを最大2個選択
+            // 第1段階: 自分のポケモン1匹を選択（移動元）
             var sourceOptions = sources.Select(p => new SelectOption<PokemonInstance>(
                 p.data.cardName + "（ダメカン" + (p.currentDamage / 10) + "個）",
                 p
             )).ToList();
 
-            Debug.Log($"[TEST] 第1段階: モーダル表示 - ダメカンを取るポケモンを3個まで選択");
 
-            ModalSystem.Instance.OpenMultiSelectModal(
-                "ダメカンを取るポケモンを3個まで選択",
+            ModalSystem.Instance.OpenSelectModal(
+                "アドレナブレイン：移動元（自分の場）を選択",
                 sourceOptions,
-                3,
-                (selectedPokemons) =>
+                (selectedSource) =>
                 {
-                    if (selectedPokemons == null || selectedPokemons.Count == 0)
+                    if (selectedSource == null)
                     {
-                        Debug.Log("→ アドレナブレイン: ダメカンを選択しませんでした");
                         return;
                     }
 
-                    Debug.Log($"[TEST] ✅ 第1段階選択完了: {selectedPokemons.Count}個のダメカンを選択");
-                    foreach (var p in selectedPokemons)
+
+                    // 第2段階: ダメカンの個数を選択（1～3個、ポケモンのダメカン数まで）
+                    int maxDamageCounters = Mathf.Min(3, selectedSource.currentDamage / 10);
+                    var countOptions = new List<SelectOption<int>>();
+                    for (int i = 1; i <= maxDamageCounters; i++)
                     {
-                        Debug.Log($"[TEST]   - {p.data.cardName}からダメカン1個を取る（残り{p.currentDamage / 10 - 1}個）");
+                        countOptions.Add(new SelectOption<int>(i + "個", i * 10));
                     }
 
-                    // 各ポケモンから10ダメージ（1個）ずつ減らす
-                    int totalDamageToMove = selectedPokemons.Count * 10;
-                    foreach (var p in selectedPokemons)
-                    {
-                        p.currentDamage = Mathf.Max(0, p.currentDamage - 10);
-                    }
-
-                    Debug.Log($"[TEST] 移動するダメージ合計: {totalDamageToMove}（ダメカン{totalDamageToMove / 10}個）");
-
-                    // 第2段階: 相手のポケモンを1匹選択
-                    var targetOptions = targets.Select(p => new SelectOption<PokemonInstance>(
-                        p.data.cardName + "（HP " + (p.data.baseHP - p.currentDamage) + "/" + p.data.baseHP + "）",
-                        p
-                    )).ToList();
-
-                    Debug.Log($"[TEST] 第2段階: モーダル表示 - ダメカンを乗せる相手のポケモンを選択");
 
                     ModalSystem.Instance.OpenSelectModal(
-                        "ダメカンを乗せる相手のポケモンを選択",
-                        targetOptions,
-                        (selectedTarget) =>
+                        "移動するダメカンの数",
+                        countOptions,
+                        (damageAmount) =>
                         {
-                            if (selectedTarget == null)
+                            if (damageAmount == 0)
                             {
-                                Debug.Log("→ アドレナブレイン: 相手のポケモンを選択しませんでした");
                                 return;
                             }
 
-                            Debug.Log($"[TEST] ✅ 第2段階選択完了: {selectedTarget.data.cardName}を選択");
-                            Debug.Log($"[TEST] 移動前: {selectedTarget.data.cardName} HP {selectedTarget.data.baseHP - selectedTarget.currentDamage}/{selectedTarget.data.baseHP}");
+                            int damageCounters = damageAmount / 10;
 
-                            // ダメージを乗せる
-                            selectedTarget.currentDamage += totalDamageToMove;
+                            // 第3段階: 相手のポケモンを1匹選択（移動先）
+                            var targetOptions = targets.Select(p => new SelectOption<PokemonInstance>(
+                                p.data.cardName + "（ダメカン" + (p.currentDamage / 10) + "個）",
+                                p
+                            )).ToList();
 
-                            Debug.Log($"[TEST] 移動後: {selectedTarget.data.cardName} HP {selectedTarget.data.baseHP - selectedTarget.currentDamage}/{selectedTarget.data.baseHP}");
-                            Debug.Log($"[TEST] ====== アドレナブレイン完了: ダメカン{selectedPokemons.Count}個を《{selectedTarget.data.cardName}》へ移動 ======");
 
-                            // きぜつチェック
-                            if (selectedTarget.IsKnockedOut)
-                            {
-                                Debug.Log($"[TEST] ⚠️ {selectedTarget.data.cardName}がきぜつ！");
-                                gm.KnockoutPokemon(opponent, selectedTarget);
-                            }
+                            ModalSystem.Instance.OpenSelectModal(
+                                "移動先（相手の場）を選択",
+                                targetOptions,
+                                (selectedTarget) =>
+                                {
+                                    if (selectedTarget == null)
+                                    {
+                                        return;
+                                    }
 
-                            UIManager.Instance?.UpdateUI();
+
+                                    // ダメージを移動
+                                    selectedSource.currentDamage = Mathf.Max(0, selectedSource.currentDamage - damageAmount);
+                                    selectedTarget.currentDamage += damageAmount;
+
+
+                                    // きぜつチェック
+                                    if (selectedTarget.IsKnockedOut)
+                                    {
+                                        gm.KnockoutPokemon(opponent, selectedTarget);
+                                    }
+
+                                    UIManager.Instance?.UpdateUI();
+                                },
+                                defaultFirst: true
+                            );
                         },
                         defaultFirst: true
                     );
-                }
+                },
+                defaultFirst: true
             );
 
             return true;
@@ -227,14 +215,12 @@ namespace PTCG
             // バトル場限定
             if (player.activeSlot != pokemon)
             {
-                Debug.Log("《ふしぎなしっぽ》はバトル場にいるときのみ使用できます");
                 return false;
             }
 
             int count = Mathf.Min(6, player.deck.Count);
             if (count <= 0)
             {
-                Debug.Log("山札が残っていません");
                 return false;
             }
 
@@ -245,7 +231,6 @@ namespace PTCG
 
             if (items.Count == 0)
             {
-                Debug.Log($"《ふしぎなしっぽ》：上{count}枚にグッズなし → 山札を切り直し");
                 player.ShuffleDeck();
                 return true;
             }
@@ -263,7 +248,6 @@ namespace PTCG
                 {
                     if (selectedCard == null)
                     {
-                        Debug.Log("→ ふしぎなしっぽ: グッズを選択しませんでした");
                         player.ShuffleDeck();
                         return;
                     }
@@ -271,7 +255,6 @@ namespace PTCG
                     // 選択したカードを山札から削除し手札に追加
                     player.deck.Remove(selectedCard);
                     player.hand.Add(selectedCard);
-                    Debug.Log($"→ ふしぎなしっぽ: 《{selectedCard.cardName}》を手札に");
 
                     // 山札をシャッフル
                     player.ShuffleDeck();
@@ -293,12 +276,10 @@ namespace PTCG
             if (drawCount > 0)
             {
                 player.Draw(drawCount);
-                Debug.Log($"《リスタート》：手札が3枚になるまで{drawCount}枚ドロー");
                 return true;
             }
             else
             {
-                Debug.Log("《リスタート》：手札が3枚以上あるため使用できません");
                 return false;
             }
         }
@@ -310,7 +291,6 @@ namespace PTCG
         {
             if (player.hand.Count == 0)
             {
-                Debug.Log("《精製》：手札がありません");
                 return false;
             }
 
@@ -327,18 +307,15 @@ namespace PTCG
                 {
                     if (selectedCard == null)
                     {
-                        Debug.Log("→ 精製: カードを選択しませんでした");
                         return;
                     }
 
                     // 手札から削除してトラッシュへ
                     player.hand.Remove(selectedCard);
                     player.discard.Add(selectedCard);
-                    Debug.Log($"→ 精製: 《{selectedCard.cardName}》をトラッシュ");
 
                     // 2枚ドロー
                     player.Draw(2);
-                    Debug.Log("→ 精製: 2枚ドロー");
 
                     UIManager.Instance?.UpdateUI();
                 },
@@ -359,7 +336,6 @@ namespace PTCG
 
             if (!hasPsychicEnergy)
             {
-                Debug.Log("《サイコエンブレイス》：トラッシュに基本超エネルギーがありません");
                 return false;
             }
 
@@ -370,7 +346,6 @@ namespace PTCG
 
             if (psychicPokemons.Count == 0)
             {
-                Debug.Log("→ 対象の超ポケモンがいません（または気絶してしまいます）");
                 return false;
             }
 
@@ -387,7 +362,6 @@ namespace PTCG
                 {
                     if (selectedPokemon == null)
                     {
-                        Debug.Log("→ サイコエンブレイス: ポケモンを選択しませんでした");
                         return;
                     }
 

@@ -30,7 +30,6 @@ namespace PTCG
             if (player.activeSlot == null) return false;
             if (player.attackedThisTurn)
             {
-                Debug.Log("このターンはすでに攻撃しました");
                 return false;
             }
 
@@ -44,12 +43,10 @@ namespace PTCG
 
             if (active.statusCondition == StatusCondition.Paralysis)
             {
-                Debug.Log("まひ：攻撃できない");
                 return false;
             }
             if (active.statusCondition == StatusCondition.Sleep)
             {
-                Debug.Log("ねむり：攻撃できない");
                 return false;
             }
 
@@ -111,7 +108,6 @@ namespace PTCG
 
             var attackData = atkPokemon.data.attacks[attackIndex];
 
-            Debug.Log($"{attacker.playerName}: 《{attackData.attackName}》");
 
             if (atkPokemon.statusCondition == StatusCondition.Confusion)
             {
@@ -119,11 +115,9 @@ namespace PTCG
                 if (!heads)
                 {
                     atkPokemon.TakeDamage(30);
-                    Debug.Log($"こんらんで自傷30");
                     CheckKnockout(attacker, atkPokemon);
                     return;
                 }
-                // else { Debug.Log("こんらん：コイン オモテ → 攻撃成功"); }
             }
 
             if (!string.IsNullOrEmpty(attackData.effectID) &&
@@ -136,7 +130,6 @@ namespace PTCG
             if (attackData.clearsStatus)
             {
                 atkPokemon.ClearStatus();
-                // Debug.Log($"特殊状態回復");
             }
 
             int baseDamage = ComputeAttackDamage(attackData, atkPokemon, defPokemon);
@@ -147,12 +140,10 @@ namespace PTCG
             int hpAfter = defPokemon.data.baseHP - defPokemon.currentDamage;
 
             // 詳細ログ: 誰が誰にどれだけダメージ
-            Debug.Log($"【攻撃】{attacker.playerName}の《{atkPokemon.data.cardName}》→ {defender.playerName}の《{defPokemon.data.cardName}》に {finalDamage}ダメージ (HP: {hpBefore}→{hpAfter})");
 
             if (attackData.effectID == "inflict_confusion")
             {
                 defPokemon.statusCondition = StatusCondition.Confusion;
-                Debug.Log("→ 追加効果：こんらん");
             }
 
             CheckKnockout(defender, defPokemon);
@@ -227,7 +218,6 @@ namespace PTCG
             var defenderAttacks = defender.activeSlot.data.attacks;
             if (defenderAttacks == null || defenderAttacks.Count == 0)
             {
-                Debug.Log("コピー元のワザがありません");
                 return;
             }
 
@@ -249,45 +239,62 @@ namespace PTCG
             }
             else  // "copy_attack" - Mew's ゲノムハック
             {
-                // ワザ選択肢作成
-                var options = new List<SelectOption<int>>();
-                for (int i = 0; i < defenderAttacks.Count; i++)
+                // AIの場合はランダム選択
+                if (attacker.isAI)
                 {
-                    var attack = defenderAttacks[i];
-                    string label = $"{attack.attackName}（ダメージ: {attack.baseDamage}）";
-                    options.Add(new SelectOption<int>(label, i));
-                }
+                    int randomIndex = Random.Range(0, defenderAttacks.Count);
+                    var copiedAttack = defenderAttacks[randomIndex];
 
-                // モーダル選択表示
-                ModalSystem.Instance.OpenSelectModal(
-                    "コピーするワザを選択",
-                    options,
-                    (selectedIndex) =>
+                    int baseDamage = ComputeAttackDamage(copiedAttack, attacker.activeSlot, defender.activeSlot);
+                    int finalDamage = ApplyWeaknessAndResistance(attacker.activeSlot, defender.activeSlot, baseDamage);
+
+                    if (copiedAttack.clearsStatus)
                     {
-                        if (selectedIndex < 0 || selectedIndex >= defenderAttacks.Count) return;
+                        attacker.activeSlot.ClearStatus();
+                    }
 
-                        var copiedAttack = defenderAttacks[selectedIndex];
-                        Debug.Log($"《{attacker.activeSlot.data.cardName}》が《{copiedAttack.attackName}》をコピー");
+                    defender.activeSlot.TakeDamage(finalDamage);
+                    CheckKnockout(defender, defender.activeSlot);
+                }
+                else
+                {
+                    // プレイヤーの場合はモーダル選択
+                    var options = new List<SelectOption<int>>();
+                    for (int i = 0; i < defenderAttacks.Count; i++)
+                    {
+                        var attack = defenderAttacks[i];
+                        string label = attack.attackName + "（ダメージ: " + attack.baseDamage + "）";
+                        options.Add(new SelectOption<int>(label, i));
+                    }
 
-                        int baseDamage = ComputeAttackDamage(copiedAttack, attacker.activeSlot, defender.activeSlot);
-                        int finalDamage = ApplyWeaknessAndResistance(attacker.activeSlot, defender.activeSlot, baseDamage);
-
-                        if (copiedAttack.clearsStatus)
+                    ModalSystem.Instance.OpenSelectModal(
+                        "コピーするワザを選択",
+                        options,
+                        (selectedIndex) =>
                         {
-                            attacker.activeSlot.ClearStatus();
-                        }
+                            if (selectedIndex < 0 || selectedIndex >= defenderAttacks.Count) return;
 
-                        defender.activeSlot.TakeDamage(finalDamage);
-                        CheckKnockout(defender, defender.activeSlot);
+                            var copiedAttack = defenderAttacks[selectedIndex];
 
-                        // UI更新
-                        if (UIManager.Instance != null)
-                        {
-                            UIManager.Instance.UpdateUI();
-                        }
-                    },
-                    defaultFirst: false
-                );
+                            int baseDamage = ComputeAttackDamage(copiedAttack, attacker.activeSlot, defender.activeSlot);
+                            int finalDamage = ApplyWeaknessAndResistance(attacker.activeSlot, defender.activeSlot, baseDamage);
+
+                            if (copiedAttack.clearsStatus)
+                            {
+                                attacker.activeSlot.ClearStatus();
+                            }
+
+                            defender.activeSlot.TakeDamage(finalDamage);
+                            CheckKnockout(defender, defender.activeSlot);
+
+                            if (UIManager.Instance != null)
+                            {
+                                UIManager.Instance.UpdateUI();
+                            }
+                        },
+                        defaultFirst: false
+                    );
+                }
             }
         }
 

@@ -40,6 +40,10 @@ namespace PTCG
         [Header("Card Prefab")]
         public GameObject cardUIPrefab;
 
+        [Header("Debug UI")]
+        public Text turnText;
+        public Text mulliganLogText;
+
         // Active card UI instances
         private List<GameObject> playerHandUICards = new List<GameObject>();
         private List<GameObject> opponentHandUICards = new List<GameObject>();
@@ -63,7 +67,6 @@ namespace PTCG
                 cardUIPrefab = Resources.Load<GameObject>("Prefabs/CardUI");
                 if (cardUIPrefab == null)
                 {
-                    Debug.LogWarning("CardUI prefab not found in Resources/Prefabs/");
                 }
             }
         }
@@ -204,6 +207,19 @@ namespace PTCG
                     if (texts.Length > 0) stadiumText = texts[0];
                 }
             }
+
+            // Debug UI
+            if (turnText == null)
+            {
+                GameObject obj = GameObject.Find("TurnText");
+                if (obj != null) turnText = obj.GetComponent<Text>();
+            }
+
+            if (mulliganLogText == null)
+            {
+                GameObject obj = GameObject.Find("MulliganLogText");
+                if (obj != null) mulliganLogText = obj.GetComponent<Text>();
+            }
         }
 
         private void OnEndTurnClicked()
@@ -226,17 +242,9 @@ namespace PTCG
             var player2 = GameManager.Instance.player2;
             var currentPlayer = GameManager.Instance.GetCurrentPlayer();
 
-            // Current player is displayed at bottom, opponent at top
-            if (currentPlayer == player1)
-            {
-                UpdatePlayerUI(player1, isBottom: true);
-                UpdatePlayerUI(player2, isBottom: false);
-            }
-            else
-            {
-                UpdatePlayerUI(player2, isBottom: true);
-                UpdatePlayerUI(player1, isBottom: false);
-            }
+            // Fixed layout (like HTML version): Player1(User) at bottom, Player2(AI) at top
+            UpdatePlayerUI(player1, isBottom: true);  // User at bottom
+            UpdatePlayerUI(player2, isBottom: false); // AI at top
 
             // Update stadium display
             UpdateStadiumDisplay();
@@ -248,6 +256,17 @@ namespace PTCG
             if (endTurnButton != null)
             {
                 endTurnButton.interactable = !currentPlayer.isAI;
+            }
+
+            // Update debug UI
+            if (turnText != null)
+            {
+                turnText.text = "Turn: " + GameManager.Instance.turnCount;
+            }
+
+            if (mulliganLogText != null)
+            {
+                mulliganLogText.text = "P1: Mulligan " + player1.mulligansGiven + ", Hand " + player1.hand.Count + " | P2: Mulligan " + player2.mulligansGiven + ", Hand " + player2.hand.Count;
             }
         }
 
@@ -285,9 +304,6 @@ namespace PTCG
                 if (opponentPrizesCount != null)
                     opponentPrizesCount.text = player.prizes.Count.ToString();
 
-                if (opponentHandCount != null)
-                    opponentHandCount.text = player.hand.Count.ToString();
-
                 if (opponentDiscardCount != null)
                     opponentDiscardCount.text = player.discard.Count.ToString();
 
@@ -304,7 +320,6 @@ namespace PTCG
 
         private void UpdateHandDisplay(PlayerController player)
         {
-            // Debug.Log($"UpdateHandDisplay called: player={player?.playerName}, handCount={player?.hand.Count}, playerHandZone={playerHandZone != null}, cardUIPrefab={cardUIPrefab != null}");
             if (playerHandZone == null || cardUIPrefab == null) return;
 
             // Clear existing hand UI
@@ -548,32 +563,41 @@ namespace PTCG
                     hpText.text = "";
             }
 
-            // Set card image color based on type
-            if (cardImage != null && cardData is PokemonCardData pkmData)
+            // Set card image sprite (if cardArt is assigned)
+            if (cardImage != null)
             {
-                switch (pkmData.type)
+                if (cardData.cardArt != null)
                 {
-                    case PokemonType.P:
-                        cardImage.color = new Color(0.7f, 0.3f, 0.7f); // Psychic - Purple
-                        break;
-                    case PokemonType.D:
-                        cardImage.color = new Color(0.3f, 0.3f, 0.3f); // Dark - Dark Gray
-                        break;
-                    case PokemonType.Y:
-                        cardImage.color = new Color(1.0f, 0.7f, 0.8f); // Fairy - Pink
-                        break;
-                    case PokemonType.G:
-                        cardImage.color = new Color(0.3f, 0.8f, 0.3f); // Grass - Green
-                        break;
-                    case PokemonType.M:
-                        cardImage.color = new Color(0.7f, 0.7f, 0.8f); // Metal - Steel Gray
-                        break;
-                    case PokemonType.C:
-                        cardImage.color = new Color(0.8f, 0.8f, 0.8f); // Colorless - Light Gray
-                        break;
-                    default:
-                        cardImage.color = Color.white;
-                        break;
+                    cardImage.sprite = cardData.cardArt;
+                    cardImage.color = Color.white; // Reset color to white to display sprite correctly
+                }
+                else if (cardData is PokemonCardData pkmData)
+                {
+                    // Fallback: Set card image color based on type if no sprite is assigned
+                    switch (pkmData.type)
+                    {
+                        case PokemonType.P:
+                            cardImage.color = new Color(0.7f, 0.3f, 0.7f); // Psychic - Purple
+                            break;
+                        case PokemonType.D:
+                            cardImage.color = new Color(0.3f, 0.3f, 0.3f); // Dark - Dark Gray
+                            break;
+                        case PokemonType.Y:
+                            cardImage.color = new Color(1.0f, 0.7f, 0.8f); // Fairy - Pink
+                            break;
+                        case PokemonType.G:
+                            cardImage.color = new Color(0.3f, 0.8f, 0.3f); // Grass - Green
+                            break;
+                        case PokemonType.M:
+                            cardImage.color = new Color(0.7f, 0.7f, 0.8f); // Metal - Steel Gray
+                            break;
+                        case PokemonType.C:
+                            cardImage.color = new Color(0.8f, 0.8f, 0.8f); // Colorless - Light Gray
+                            break;
+                        default:
+                            cardImage.color = Color.white;
+                            break;
+                    }
                 }
             }
         }
@@ -620,32 +644,41 @@ namespace PTCG
                     hpText.text = "";
             }
 
-            // Set card image color based on type
-            if (cardImage != null && pokemon.data is PokemonCardData pkmData)
+            // Set card image sprite (if cardArt is assigned)
+            if (cardImage != null)
             {
-                switch (pkmData.type)
+                if (pokemon.data.cardArt != null)
                 {
-                    case PokemonType.P:
-                        cardImage.color = new Color(0.7f, 0.3f, 0.7f); // Psychic - Purple
-                        break;
-                    case PokemonType.D:
-                        cardImage.color = new Color(0.3f, 0.3f, 0.3f); // Dark - Dark Gray
-                        break;
-                    case PokemonType.Y:
-                        cardImage.color = new Color(1.0f, 0.7f, 0.8f); // Fairy - Pink
-                        break;
-                    case PokemonType.G:
-                        cardImage.color = new Color(0.3f, 0.8f, 0.3f); // Grass - Green
-                        break;
-                    case PokemonType.M:
-                        cardImage.color = new Color(0.7f, 0.7f, 0.8f); // Metal - Steel Gray
-                        break;
-                    case PokemonType.C:
-                        cardImage.color = new Color(0.8f, 0.8f, 0.8f); // Colorless - Light Gray
-                        break;
-                    default:
-                        cardImage.color = Color.white;
-                        break;
+                    cardImage.sprite = pokemon.data.cardArt;
+                    cardImage.color = Color.white; // Reset color to white to display sprite correctly
+                }
+                else if (pokemon.data is PokemonCardData pkmData)
+                {
+                    // Fallback: Set card image color based on type if no sprite is assigned
+                    switch (pkmData.type)
+                    {
+                        case PokemonType.P:
+                            cardImage.color = new Color(0.7f, 0.3f, 0.7f); // Psychic - Purple
+                            break;
+                        case PokemonType.D:
+                            cardImage.color = new Color(0.3f, 0.3f, 0.3f); // Dark - Dark Gray
+                            break;
+                        case PokemonType.Y:
+                            cardImage.color = new Color(1.0f, 0.7f, 0.8f); // Fairy - Pink
+                            break;
+                        case PokemonType.G:
+                            cardImage.color = new Color(0.3f, 0.8f, 0.3f); // Grass - Green
+                            break;
+                        case PokemonType.M:
+                            cardImage.color = new Color(0.7f, 0.7f, 0.8f); // Metal - Steel Gray
+                            break;
+                        case PokemonType.C:
+                            cardImage.color = new Color(0.8f, 0.8f, 0.8f); // Colorless - Light Gray
+                            break;
+                        default:
+                            cardImage.color = Color.white;
+                            break;
+                    }
                 }
             }
         }
@@ -692,7 +725,6 @@ namespace PTCG
         public void InitializeUI()
         {
             UpdateUI();
-            // Debug.Log("UI initialized");
         }
     }
 }

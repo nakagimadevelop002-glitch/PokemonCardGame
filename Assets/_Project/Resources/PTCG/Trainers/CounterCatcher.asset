@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: CounterCatcher
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: CounterCatcher
   cardName: "\u30AB\u30A6\u30F3\u30BF\u30FC\u30AD\u30E3\u30C3\u30C1\u30E3\u30FC"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 6b0878844ee206740aabbeed33d7ce2e, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

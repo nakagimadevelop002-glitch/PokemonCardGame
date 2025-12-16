@@ -38,27 +38,28 @@ namespace PTCG
             {
                 if (player.supporterUsedThisTurn)
                 {
-                    Debug.Log("このターンはサポート済み");
                     return false;
                 }
                 // 先攻1Tはサポート不可
                 var gm = GameManager.Instance;
                 if (gm.currentPlayerIndex == gm.firstPlayerIndex && gm.turnCount == 1)
                 {
-                    Debug.Log("先攻1Tはサポート不可");
                     return false;
                 }
             }
 
-            // 手札から削除してトラッシュへ
+            // 手札から削除
             if (!player.hand.Remove(trainer))
             {
-                Debug.LogError($"{trainer.cardName} が手札にありません");
                 return false;
             }
-            player.discard.Add(trainer);
 
-            Debug.Log($"{player.playerName}: {trainer.trainerType} 《{trainer.cardName}》");
+            // スタジアム以外はトラッシュへ（スタジアムは場に残る）
+            if (trainer.trainerType != TrainerType.Stadium)
+            {
+                player.discard.Add(trainer);
+            }
+
 
             // カード効果を実行
             bool success = ExecuteTrainerEffect(player, trainer);
@@ -85,7 +86,6 @@ namespace PTCG
                         player.discard.AddRange(player.hand);
                         player.hand.Clear();
                         player.Draw(7);
-                        Debug.Log($"→ 博士：手札{handCount} → 全トラッシュ／7枚ドロー");
                         return true;
                     }
 
@@ -106,7 +106,6 @@ namespace PTCG
                         gm.player1.Draw(p1Count);
                         gm.player2.Draw(p2Count);
 
-                        Debug.Log($"→ ナンジャモ：Player1={p1Count} / Player2={p2Count} 枚ドロー");
                         return true;
                     }
 
@@ -114,7 +113,6 @@ namespace PTCG
                     {
                         if (opponent.benchSlots.Count == 0)
                         {
-                            Debug.Log("→ 相手のベンチなし");
                             return true;
                         }
 
@@ -131,7 +129,6 @@ namespace PTCG
                             {
                                 if (selectedPokemon == null)
                                 {
-                                    Debug.Log("選択がありません");
                                     return;
                                 }
 
@@ -139,7 +136,6 @@ namespace PTCG
                                 int benchIndex = opponent.benchSlots.IndexOf(selectedPokemon);
                                 if (benchIndex < 0)
                                 {
-                                    Debug.LogError("選択されたポケモンがベンチに見つかりません");
                                     return;
                                 }
 
@@ -154,7 +150,6 @@ namespace PTCG
                                 // 選択されたポケモンをバトル場へ
                                 opponent.activeSlot = selectedPokemon;
 
-                                Debug.Log("→ ボス：呼び出し完了");
                                 UIManager.Instance?.UpdateUI();
                             },
                             defaultFirst: true
@@ -172,7 +167,6 @@ namespace PTCG
 
                         if (items.Count == 0)
                         {
-                            Debug.Log("→ グッズが山札にありません");
                             return true;
                         }
 
@@ -189,7 +183,6 @@ namespace PTCG
                             {
                                 if (selectedItem == null)
                                 {
-                                    Debug.Log("→ グッズが選ばれていません");
                                     return;
                                 }
 
@@ -220,7 +213,6 @@ namespace PTCG
 
                                             player.ShuffleDeck();
                                             var toolText = pickedTool != null ? $" ＋ どうぐ《{pickedTool.cardName}》" : "（どうぐスキップ）";
-                                            Debug.Log($"→ 公開：グッズ《{selectedItem.cardName}》{toolText} を手札に");
                                             UIManager.Instance?.UpdateUI();
                                         },
                                         defaultFirst: true
@@ -230,7 +222,6 @@ namespace PTCG
                                 {
                                     // どうぐが山札にない場合
                                     player.ShuffleDeck();
-                                    Debug.Log($"→ 公開：グッズ《{selectedItem.cardName}》（どうぐ該当なし） を手札に");
                                     UIManager.Instance?.UpdateUI();
                                 }
                             },
@@ -244,14 +235,12 @@ namespace PTCG
                     {
                         if (player.benchSlots.Count >= 5)
                         {
-                            Debug.Log("→ ベンチがいっぱい");
                             return true;
                         }
                         var basics = player.deck.OfType<PokemonCardData>()
                             .Where(p => p.stage == PokemonStage.Basic).ToList();
                         if (basics.Count == 0)
                         {
-                            Debug.Log("→ 対象なし");
                             return true;
                         }
 
@@ -268,13 +257,11 @@ namespace PTCG
                             {
                                 if (selectedCard == null)
                                 {
-                                    Debug.Log("選択がありません");
                                     return;
                                 }
 
                                 player.deck.Remove(selectedCard);
                                 gm.SpawnPokemonToBench(player, selectedCard);
-                                Debug.Log($"→ 公開：《{selectedCard.cardName}》をベンチへ");
                                 UIManager.Instance?.UpdateUI();
                             },
                             defaultFirst: true
@@ -288,7 +275,6 @@ namespace PTCG
                             .Where(p => p.baseHP <= 90).ToList();
                         if (candidates.Count == 0)
                         {
-                            Debug.Log("→ 対象なし");
                             return true;
                         }
 
@@ -305,14 +291,12 @@ namespace PTCG
                             {
                                 if (selectedCard == null)
                                 {
-                                    Debug.Log("→ 何も選ばれていません（OKの前に1つ選んでください）");
                                     return;
                                 }
 
                                 player.deck.Remove(selectedCard);
                                 player.hand.Add(selectedCard);
                                 player.ShuffleDeck();
-                                Debug.Log($"→ 公開：《{selectedCard.cardName}》を手札に");
                                 UIManager.Instance?.UpdateUI();
                             },
                             defaultFirst: true
@@ -324,7 +308,6 @@ namespace PTCG
                     {
                         if (player.hand.Count < 2)
                         {
-                            Debug.Log("→ 手札が2枚未満");
                             return true;
                         }
 
@@ -342,7 +325,6 @@ namespace PTCG
                             {
                                 if (trashCards == null || trashCards.Count != 2)
                                 {
-                                    Debug.Log("→ 2枚選択してください");
                                     return;
                                 }
 
@@ -357,7 +339,6 @@ namespace PTCG
                                 var pokemons = player.deck.OfType<PokemonCardData>().ToList();
                                 if (pokemons.Count == 0)
                                 {
-                                    Debug.Log("→ 山札にポケモンなし");
                                     return;
                                 }
 
@@ -373,14 +354,12 @@ namespace PTCG
                                     {
                                         if (selectedPokemon == null)
                                         {
-                                            Debug.Log("選択がありません");
                                             return;
                                         }
 
                                         player.deck.Remove(selectedPokemon);
                                         player.hand.Add(selectedPokemon);
                                         player.ShuffleDeck();
-                                        Debug.Log($"→ 公開：《{selectedPokemon.cardName}》を手札に");
                                         UIManager.Instance?.UpdateUI();
                                     },
                                     defaultFirst: true
@@ -398,7 +377,6 @@ namespace PTCG
 
                         if (allBasics.Count == 0)
                         {
-                            Debug.Log("→ 場にたねポケモンがいません");
                             return true;
                         }
 
@@ -408,7 +386,6 @@ namespace PTCG
 
                         if (stage2Cards.Count == 0)
                         {
-                            Debug.Log("→ 手札に2進化カードがありません");
                             return true;
                         }
 
@@ -433,7 +410,6 @@ namespace PTCG
 
                         if (validBasics.Count == 0)
                         {
-                            Debug.Log("→ 場に有効な たね がいない、または手札に対応する2進化カードがありません");
                             return true;
                         }
 
@@ -450,7 +426,6 @@ namespace PTCG
                             {
                                 if (selectedBasic == null)
                                 {
-                                    Debug.Log("選択がありません");
                                     return;
                                 }
 
@@ -461,7 +436,6 @@ namespace PTCG
 
                                 if (compatibleStage2.Count == 0)
                                 {
-                                    Debug.Log("→ 対応する2進化カードが見つかりません");
                                     return;
                                 }
 
@@ -477,7 +451,6 @@ namespace PTCG
                                     {
                                         if (selectedStage2 == null)
                                         {
-                                            Debug.Log("選択がありません");
                                             return;
                                         }
 
@@ -497,7 +470,6 @@ namespace PTCG
                                         }
                                         else
                                         {
-                                            Debug.Log("→ 進化に失敗（対応する系統ではありません）");
                                         }
                                     },
                                     defaultFirst: true
@@ -512,7 +484,6 @@ namespace PTCG
                     {
                         if (player.hand.Count == 0)
                         {
-                            Debug.Log("→ 手札がありません");
                             return true;
                         }
 
@@ -529,7 +500,6 @@ namespace PTCG
                             {
                                 if (selectedCard == null)
                                 {
-                                    Debug.Log("選択がありません");
                                     return;
                                 }
 
@@ -555,7 +525,6 @@ namespace PTCG
                                 }
 
                                 player.ShuffleDeck();
-                                Debug.Log($"→ 基本超エネルギー {basicPsychicEnergies.Count}枚 を手札に");
                                 UIManager.Instance?.UpdateUI();
                             },
                             defaultFirst: true
@@ -580,7 +549,6 @@ namespace PTCG
                                 {
                                     if (selectedOppPokemon == null)
                                     {
-                                        Debug.Log("選択がありません");
                                         return;
                                     }
 
@@ -595,7 +563,6 @@ namespace PTCG
                                         {
                                             opponent.benchSlots.Insert(0, prevOppActive);
                                         }
-                                        Debug.Log("→ あなぬけのヒモ：相手が交代");
                                     }
 
                                     // 第2段階：自分のベンチがあれば交代させる
@@ -613,7 +580,6 @@ namespace PTCG
                                             {
                                                 if (selectedPlayerPokemon == null)
                                                 {
-                                                    Debug.Log("選択がありません");
                                                     return;
                                                 }
 
@@ -658,7 +624,6 @@ namespace PTCG
                                 {
                                     if (selectedPlayerPokemon == null)
                                     {
-                                        Debug.Log("選択がありません");
                                         return;
                                     }
 
@@ -690,7 +655,6 @@ namespace PTCG
                         ).ToList();
                         if (pool.Count == 0)
                         {
-                            Debug.Log("→ トラッシュに対象なし");
                             return true;
                         }
 
@@ -719,7 +683,6 @@ namespace PTCG
                                 }
 
                                 player.ShuffleDeck();
-                                Debug.Log($"→ {selectedCards.Count}枚を山札にもどした");
                                 UIManager.Instance?.UpdateUI();
                             }
                         );
@@ -730,12 +693,10 @@ namespace PTCG
                     {
                         if (player.prizes.Count >= opponent.prizes.Count)
                         {
-                            Debug.Log("→ サイドが相手より少なくないため使えません");
                             return true;
                         }
                         if (opponent.benchSlots.Count == 0)
                         {
-                            Debug.Log("→ 相手ベンチなし");
                             return true;
                         }
 
@@ -752,7 +713,6 @@ namespace PTCG
                             {
                                 if (selectedPokemon == null)
                                 {
-                                    Debug.Log("選択がありません");
                                     return;
                                 }
 
@@ -760,7 +720,6 @@ namespace PTCG
                                 int benchIndex = opponent.benchSlots.IndexOf(selectedPokemon);
                                 if (benchIndex < 0)
                                 {
-                                    Debug.LogError("選択されたポケモンがベンチに見つかりません");
                                     return;
                                 }
 
@@ -775,7 +734,6 @@ namespace PTCG
                                 // 選択されたポケモンをバトル場へ
                                 opponent.activeSlot = selectedPokemon;
 
-                                Debug.Log("→ 呼び出し完了");
                                 UIManager.Instance?.UpdateUI();
                             },
                             defaultFirst: true
@@ -787,7 +745,6 @@ namespace PTCG
                     {
                         if (player.hand.Count == 0)
                         {
-                            Debug.Log("→ コスト支払い用の手札がありません");
                             return true;
                         }
 
@@ -804,7 +761,6 @@ namespace PTCG
                             {
                                 if (selectedCard == null)
                                 {
-                                    Debug.Log("選択がありません");
                                     return;
                                 }
 
@@ -844,7 +800,6 @@ namespace PTCG
 
                                 if (targets.Count == 0)
                                 {
-                                    Debug.Log("→ 除去できる対象がありません");
                                     return;
                                 }
 
@@ -856,16 +811,21 @@ namespace PTCG
                                     {
                                         if (selectedTarget == null)
                                         {
-                                            Debug.Log("選択がありません");
                                             return;
                                         }
 
-                                        // スタジアム除去
+                                        // スタジアム除去（ロストゾーンへ）
                                         if (selectedTarget == "stadium")
                                         {
-                                            var stadiumName = gm.stadiumInPlay;
+                                            if (gm.stadiumCardData != null)
+                                            {
+                                                // スタジアムを使ったプレイヤーのロストゾーンに追加
+                                                PlayerController stadiumOwner = gm.stadiumOwnerIndex == 0 ? gm.player1 : gm.player2;
+                                                stadiumOwner.lostZone.Add(gm.stadiumCardData);
+                                            }
                                             gm.stadiumInPlay = null;
-                                            Debug.Log($"→ スタジアム《{stadiumName}》をロストゾーンへ");
+                                            gm.stadiumCardData = null;
+                                            gm.stadiumOwnerIndex = -1;
                                         }
                                         // どうぐ除去
                                         else if (selectedTarget.StartsWith("tool:"))
@@ -884,7 +844,6 @@ namespace PTCG
                                                     var tool = pokemon.attachedTool;
                                                     pokemon.attachedTool = null;
                                                     targetPlayer.lostZone.Add(tool);
-                                                    Debug.Log($"→ どうぐ《{tool.cardName}》をロストゾーンへ");
                                                     break;
                                                 }
                                             }
@@ -902,13 +861,58 @@ namespace PTCG
 
                 // ========= スタジアム =========
                 case "Artazon": // ボウルタウン
+                    {
+                        // 使用時効果：山札からたねポケモンを2枚まで手札に加える
+                        var basicPokemons = player.deck.OfType<PokemonCardData>()
+                            .Where(p => p.stage == PokemonStage.Basic)
+                            .ToList();
+
+                        if (basicPokemons.Count == 0)
+                        {
+                            // たねポケモンがない場合もスタジアムは設置される
+                            return PlayStadium(player, trainer);
+                        }
+
+                        // モーダル選択：最大2枚
+                        var options = basicPokemons.Select(p => new SelectOption<CardData>(
+                            GetCardLabel(p),
+                            p
+                        )).ToList();
+
+                        ModalSystem.Instance.OpenMultiSelectModal(
+                            "山札からたねポケモンを選ぶ（最大2枚）",
+                            options,
+                            2,
+                            (selectedCards) =>
+                            {
+                                // 選択したカードを手札に加える
+                                if (selectedCards != null && selectedCards.Count > 0)
+                                {
+                                    foreach (var card in selectedCards)
+                                    {
+                                        player.deck.Remove(card);
+                                        player.hand.Add(card);
+                                    }
+                                }
+
+                                // 山札をシャッフル
+                                player.ShuffleDeck();
+
+                                // スタジアム設置
+                                PlayStadium(player, trainer);
+
+                                UIManager.Instance?.UpdateUI();
+                            }
+                        );
+                        return true;
+                    }
+
                 case "BeachCourt": // ビーチコート
                     {
                         return PlayStadium(player, trainer);
                     }
 
                 default:
-                    Debug.LogWarning($"未実装のトレーナーカード: {trainer.cardID}");
                     return false;
             }
         }
@@ -917,14 +921,18 @@ namespace PTCG
         {
             var gm = GameManager.Instance;
 
-            // 既存のスタジアムを上書き
-            if (!string.IsNullOrEmpty(gm.stadiumInPlay))
+            // 既存のスタジアムがある場合、上書き（古いスタジアムをトラッシュへ）
+            if (!string.IsNullOrEmpty(gm.stadiumInPlay) && gm.stadiumCardData != null)
             {
-                Debug.Log($"→ 既存のスタジアム《{gm.stadiumInPlay}》を破棄");
+                // 古いスタジアムを使ったプレイヤーのトラッシュに追加
+                PlayerController stadiumOwner = gm.stadiumOwnerIndex == 0 ? gm.player1 : gm.player2;
+                stadiumOwner.discard.Add(gm.stadiumCardData);
             }
 
+            // 新しいスタジアムを場に設置
             gm.stadiumInPlay = stadium.cardID;
-            Debug.Log($"→ スタジアム《{stadium.cardName}》を場に出しました");
+            gm.stadiumCardData = stadium;
+            gm.stadiumOwnerIndex = player.playerIndex;
 
             // スタジアム効果は常駐効果のため、ここでは設置のみ
             return true;

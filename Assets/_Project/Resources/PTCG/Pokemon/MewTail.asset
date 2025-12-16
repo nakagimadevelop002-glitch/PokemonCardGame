@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: MewTail
   cardName: "\u30DF\u30E5\u30A6\u30C6\u30FC\u30EB"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 059e60d8875fb38409ea09ca109a6bf3, type: 3}
   stage: 0
   evolvesFrom: 
   type: 0

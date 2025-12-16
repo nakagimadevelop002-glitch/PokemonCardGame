@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using ModelContextProtocol.Server;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [McpServerToolType, Description("Set Inspector field values on GameObjects with reflection")]
 public class InspectorFieldSetterMCPTool
@@ -45,11 +48,23 @@ public class InspectorFieldSetterMCPTool
                 return $"ERROR: Component '{componentTypeName}' not found on '{objectName}'";
             }
 
-            // Find field
+            // Find field or property
             FieldInfo field = componentType.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (field == null)
+            PropertyInfo property = null;
+            Type memberType = null;
+
+            if (field != null)
             {
-                return $"ERROR: Field '{fieldName}' not found on '{componentTypeName}'";
+                memberType = field.FieldType;
+            }
+            else
+            {
+                property = componentType.GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance);
+                if (property == null)
+                {
+                    return $"ERROR: Field or property '{fieldName}' not found on '{componentTypeName}'";
+                }
+                memberType = property.PropertyType;
             }
 
             // Find value GameObject
@@ -59,27 +74,39 @@ public class InspectorFieldSetterMCPTool
                 return $"ERROR: Value GameObject '{valueObjectName}' not found";
             }
 
-            // Set field based on type
-            if (field.FieldType == typeof(Transform))
+            // Determine value based on member type
+            object valueToSet = null;
+
+            if (memberType == typeof(Transform))
             {
-                field.SetValue(component, valueObject.transform);
+                valueToSet = valueObject.transform;
             }
-            else if (field.FieldType == typeof(GameObject))
+            else if (memberType == typeof(GameObject))
             {
-                field.SetValue(component, valueObject);
+                valueToSet = valueObject;
             }
-            else if (typeof(UnityEngine.Component).IsAssignableFrom(field.FieldType))
+            else if (typeof(UnityEngine.Component).IsAssignableFrom(memberType))
             {
-                var valueComponent = valueObject.GetComponent(field.FieldType);
+                var valueComponent = valueObject.GetComponent(memberType);
                 if (valueComponent == null)
                 {
-                    return $"ERROR: Component '{field.FieldType.Name}' not found on '{valueObjectName}'";
+                    return $"ERROR: Component '{memberType.Name}' not found on '{valueObjectName}'";
                 }
-                field.SetValue(component, valueComponent);
+                valueToSet = valueComponent;
             }
             else
             {
-                return $"ERROR: Unsupported field type '{field.FieldType.Name}'";
+                return $"ERROR: Unsupported member type '{memberType.Name}'";
+            }
+
+            // Set value (field or property)
+            if (field != null)
+            {
+                field.SetValue(component, valueToSet);
+            }
+            else
+            {
+                property.SetValue(component, valueToSet);
             }
 
             Debug.Log($"Set {componentTypeName}.{fieldName} = {valueObjectName}");
@@ -236,20 +263,42 @@ public class InspectorFieldSetterMCPTool
                 return $"ERROR: Component '{componentTypeName}' not found on '{objectName}'";
             }
 
+            // Try to find as field first
             FieldInfo field = componentType.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (field == null)
+            PropertyInfo property = null;
+            Type memberType = null;
+
+            if (field != null)
             {
-                return $"ERROR: Field '{fieldName}' not found on '{componentTypeName}'";
+                memberType = field.FieldType;
+            }
+            else
+            {
+                // Try to find as property
+                property = componentType.GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance);
+                if (property == null)
+                {
+                    return $"ERROR: Field or property '{fieldName}' not found on '{componentTypeName}'";
+                }
+                memberType = property.PropertyType;
             }
 
-            // Parse value based on field type
-            object parsedValue = ParseValue(field.FieldType, value);
+            // Parse value based on member type
+            object parsedValue = ParseValue(memberType, value);
             if (parsedValue == null && !string.IsNullOrEmpty(value))
             {
-                return $"ERROR: Failed to parse '{value}' as {field.FieldType.Name}";
+                return $"ERROR: Failed to parse '{value}' as {memberType.Name}";
             }
 
-            field.SetValue(component, parsedValue);
+            // Set value
+            if (field != null)
+            {
+                field.SetValue(component, parsedValue);
+            }
+            else
+            {
+                property.SetValue(component, parsedValue);
+            }
 
             // Mark scene dirty and save
             var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
@@ -410,7 +459,7 @@ public class InspectorFieldSetterMCPTool
 #endif
     }
 
-    [McpServerTool, Description("List all public fields on a component")]
+    [McpServerTool, Description("List all public fields and properties on a component")]
     public async ValueTask<string> ListComponentFields(
         [Description("Target GameObject name")] string objectName,
         [Description("Component type name")] string componentTypeName)
@@ -440,22 +489,185 @@ public class InspectorFieldSetterMCPTool
                 return $"ERROR: Component '{componentTypeName}' not found on '{objectName}'";
             }
 
-            var fields = componentType.GetFields(BindingFlags.Public | BindingFlags.Instance);
-            string result = $"Public fields on {componentTypeName}:\n";
+            string result = $"Public fields and properties on {componentTypeName}:\n\n";
 
-            foreach (var field in fields)
+            // Get public fields
+            var fields = componentType.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            if (fields.Length > 0)
             {
-                var currentValue = field.GetValue(component);
-                string valueStr = currentValue != null ? currentValue.ToString() : "null";
-                result += $"- {field.Name} ({field.FieldType.Name}): {valueStr}\n";
+                result += "FIELDS:\n";
+                foreach (var field in fields)
+                {
+                    var currentValue = field.GetValue(component);
+                    string valueStr = FormatValue(currentValue);
+                    result += $"  {field.Name} ({field.FieldType.Name}): {valueStr}\n";
+                }
+                result += "\n";
+            }
+
+            // Get public properties
+            var properties = componentType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            if (properties.Length > 0)
+            {
+                result += "PROPERTIES:\n";
+                foreach (var property in properties)
+                {
+                    // Skip if property cannot be read
+                    if (!property.CanRead)
+                    {
+                        result += $"  {property.Name} ({property.PropertyType.Name}): [write-only]\n";
+                        continue;
+                    }
+
+                    try
+                    {
+                        var currentValue = property.GetValue(component);
+                        string valueStr = FormatValue(currentValue);
+                        string accessInfo = property.CanWrite ? "" : " [read-only]";
+                        result += $"  {property.Name} ({property.PropertyType.Name}): {valueStr}{accessInfo}\n";
+                    }
+                    catch (Exception ex)
+                    {
+                        result += $"  {property.Name} ({property.PropertyType.Name}): [error: {ex.Message}]\n";
+                    }
+                }
             }
 
             return result.Trim();
         }
         catch (Exception e)
         {
-            Debug.LogError($"Failed to list fields: {e.Message}");
+            Debug.LogError($"Failed to list fields and properties: {e.Message}");
             return $"ERROR: {e.Message}";
         }
+    }
+
+    /// <summary>
+    /// Format value for display
+    /// </summary>
+    private string FormatValue(object value)
+    {
+        if (value == null)
+            return "null";
+
+        // Vector2
+        if (value is Vector2 v2)
+            return $"({v2.x}, {v2.y})";
+
+        // Vector3
+        if (value is Vector3 v3)
+            return $"({v3.x}, {v3.y}, {v3.z})";
+
+        // Vector4
+        if (value is Vector4 v4)
+            return $"({v4.x}, {v4.y}, {v4.z}, {v4.w})";
+
+        // Quaternion
+        if (value is Quaternion q)
+            return $"({q.x}, {q.y}, {q.z}, {q.w})";
+
+        // Color
+        if (value is Color c)
+            return $"#{ColorUtility.ToHtmlStringRGBA(c)}";
+
+        // Rect
+        if (value is Rect r)
+            return $"(x:{r.x}, y:{r.y}, w:{r.width}, h:{r.height})";
+
+        return value.ToString();
+    }
+
+    [McpServerTool, Description("Set asset importer settings (TextureType, spriteMode, etc.)")]
+    public async ValueTask<string> SetAssetImporterSetting(
+        [Description("Asset path (e.g., Assets/Images/sprite.png)")] string assetPath,
+        [Description("Setting name (e.g., textureType, spriteMode, maxTextureSize)")] string settingName,
+        [Description("Value (e.g., Sprite, Multiple, 2048)")] string value)
+    {
+#if UNITY_EDITOR
+        try
+        {
+            await UniTask.SwitchToMainThread();
+
+            // Get asset importer
+            UnityEditor.AssetImporter importer = UnityEditor.AssetImporter.GetAtPath(assetPath);
+            if (importer == null)
+            {
+                return $"ERROR: Asset not found at path '{assetPath}'";
+            }
+
+            // Get importer type
+            Type importerType = importer.GetType();
+            Debug.Log($"[SetAssetImporterSetting] Importer type: {importerType.Name}");
+
+            // Find property or field
+            PropertyInfo property = importerType.GetProperty(settingName, BindingFlags.Public | BindingFlags.Instance);
+            FieldInfo field = importerType.GetField(settingName, BindingFlags.Public | BindingFlags.Instance);
+
+            if (property == null && field == null)
+            {
+                return $"ERROR: Setting '{settingName}' not found on {importerType.Name}";
+            }
+
+            Type settingType = property != null ? property.PropertyType : field.FieldType;
+            Debug.Log($"[SetAssetImporterSetting] Setting '{settingName}' type: {settingType.Name}");
+
+            // Parse value based on setting type
+            object parsedValue = null;
+
+            // Enum type (e.g., TextureImporterType, TextureImporterFormat)
+            if (settingType.IsEnum)
+            {
+                parsedValue = Enum.Parse(settingType, value, true);
+            }
+            // Int type
+            else if (settingType == typeof(int))
+            {
+                parsedValue = int.Parse(value);
+            }
+            // Bool type
+            else if (settingType == typeof(bool))
+            {
+                parsedValue = value.ToLower() == "true" || value == "1";
+            }
+            // Float type
+            else if (settingType == typeof(float))
+            {
+                parsedValue = float.Parse(value);
+            }
+            // String type
+            else if (settingType == typeof(string))
+            {
+                parsedValue = value;
+            }
+            else
+            {
+                return $"ERROR: Unsupported setting type '{settingType.Name}' for '{settingName}'";
+            }
+
+            // Set value
+            if (property != null)
+            {
+                property.SetValue(importer, parsedValue);
+            }
+            else
+            {
+                field.SetValue(importer, parsedValue);
+            }
+
+            // Save and reimport
+            importer.SaveAndReimport();
+            Debug.Log($"[SetAssetImporterSetting] Successfully set {settingName} = {parsedValue} on {assetPath}");
+
+            return $"SUCCESS: Set {settingName} = {parsedValue} on {assetPath}";
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[SetAssetImporterSetting] Failed: {e.Message}\n{e.StackTrace}");
+            return $"ERROR: {e.Message}";
+        }
+#else
+        await UniTask.Yield();
+        return "ERROR: Asset importer setting only available in Unity Editor";
+#endif
     }
 }

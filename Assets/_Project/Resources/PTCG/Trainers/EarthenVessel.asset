@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: EarthenVessel
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: EarthenVessel
   cardName: "\u5927\u5730\u306E\u5668"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 176d8d4a90efb5b4c876e58fa1eb5ece, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

@@ -14,7 +14,6 @@ public class AllMCPToolsBuilder : McpBuilderScriptableObject
         builder.WithTools<SeaweedCarpetMCPTool>();
         builder.WithTools<RefreshMCPToolsMCPTool>();
         builder.WithTools<CreateSceneMCPTool>();
-        builder.WithTools<AttachScriptMCPTool>();
         builder.WithTools<PackageManagerMCPTool>();
         builder.WithTools<PackageInstallerMCPTool>();
         builder.WithTools<CustomShapeMCPTool>();

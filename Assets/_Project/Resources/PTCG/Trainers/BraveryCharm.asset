@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: 
   cardName: "\u3044\u3055\u304E\u306E\u3075\u3093\u3069\u3057"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: fdf03151a5a50f24a9fa14bdc63eeb14, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

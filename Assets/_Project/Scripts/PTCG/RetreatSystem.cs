@@ -29,13 +29,11 @@ namespace PTCG
         {
             if (player.activeSlot == null)
             {
-                Debug.Log("バトル場にポケモンがいません");
                 return false;
             }
 
             if (benchIndex < 0 || benchIndex >= player.benchSlots.Count)
             {
-                Debug.Log("無効なベンチ位置です");
                 return false;
             }
 
@@ -44,12 +42,10 @@ namespace PTCG
             // まひ・ねむりチェック
             if (active.statusCondition == StatusCondition.Paralysis)
             {
-                Debug.Log($"{active.data.cardName}は まひ 状態のため、にげられません");
                 return false;
             }
             if (active.statusCondition == StatusCondition.Sleep)
             {
-                Debug.Log($"{active.data.cardName}は ねむり 状態のため、にげられません");
                 return false;
             }
 
@@ -67,7 +63,6 @@ namespace PTCG
             // にげることで特殊状態が回復
             active.ClearStatus();
 
-            Debug.Log($"{player.playerName}: にげる → バトル場は《{newActive.data.cardName}》");
             return true;
         }
 

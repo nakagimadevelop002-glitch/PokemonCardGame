@@ -45,7 +45,6 @@ namespace PTCG
             GameObject playerHandZone = GameObject.Find("PlayerHand");
             if (playerHandZone == null)
             {
-                Debug.LogWarning("PlayerHand not found");
                 return;
             }
 
@@ -70,17 +69,14 @@ namespace PTCG
                 }
             }
 
-            // Debug.Log($"CardSelectionHandler: {handCards.Count}枚の手札カードにButton追加");
 
             // HandCardLayoutManagerで扇状配置
             if (HandCardLayoutManager.Instance != null)
             {
                 HandCardLayoutManager.Instance.ArrangeHandCards(handCards);
-                // Debug.Log("HandCardLayoutManager.ArrangeHandCards() 実行完了");
             }
             else
             {
-                Debug.LogWarning("HandCardLayoutManager.Instance is null");
             }
         }
 
@@ -197,7 +193,6 @@ namespace PTCG
         /// </summary>
         private void OnCardClicked(GameObject cardUI)
         {
-            // Debug.Log($"カードクリック: {cardUI.name}");
 
             // CardPlayHandler経由でカードをプレイ
             if (CardPlayHandler.Instance != null)
@@ -206,7 +201,6 @@ namespace PTCG
             }
             else
             {
-                Debug.LogError("[CardSelectionHandler] CardPlayHandler.Instance is null");
             }
         }
 

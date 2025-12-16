@@ -22,7 +22,6 @@ namespace PTCG
 
         private void Start()
         {
-            // Debug.Log("[CardPlayHandler] CardPlayHandler initialized (direct play mode)");
         }
 
         /// <summary>
@@ -32,23 +31,20 @@ namespace PTCG
         {
             if (cardUI == null)
             {
-                Debug.LogWarning("[CardPlayHandler] cardUI is null");
                 return;
             }
 
-            // カードデータを取得
+            // プレイヤーターンでない場合は処理しない
+            PlayerController currentPlayer = GameManager.Instance?.GetCurrentPlayer();
+            if (currentPlayer == null || currentPlayer.isAI)
+            {
+                return;
+            }
+
+            // カードデータを取得（常にPlayer1の手札から）
             CardData cardData = GetCardDataFromUI(cardUI);
             if (cardData == null)
             {
-                Debug.LogError("[CardPlayHandler] CardData not found");
-                return;
-            }
-
-            // 現在のプレイヤーを取得
-            PlayerController currentPlayer = GameManager.Instance?.GetCurrentPlayer();
-            if (currentPlayer == null)
-            {
-                Debug.LogError("[CardPlayHandler] CurrentPlayer not found");
                 return;
             }
 
@@ -67,7 +63,6 @@ namespace PTCG
             }
             else
             {
-                Debug.LogWarning($"[CardPlayHandler] Unknown card type: {cardData.GetType()}");
             }
         }
 
@@ -76,7 +71,6 @@ namespace PTCG
         /// </summary>
         private void PlayTrainerCard(PlayerController player, TrainerCardData trainer)
         {
-            // Debug.Log($"[CardPlayHandler] Playing Trainer: {trainer.cardName}");
 
             // CardPlaySystem経由で実行
             if (CardPlaySystem.Instance != null)
@@ -95,7 +89,6 @@ namespace PTCG
         /// </summary>
         private void PlayEnergyCard(PlayerController player, EnergyCardData energy)
         {
-            // Debug.Log($"[CardPlayHandler] Playing Energy: {energy.cardName}");
 
             // エネルギー貼り先選択（バトル場+ベンチ）
             var options = new System.Collections.Generic.List<SelectOption<PokemonInstance>>();
@@ -123,7 +116,6 @@ namespace PTCG
 
             if (options.Count == 0)
             {
-                Debug.Log("[CardPlayHandler] エネルギーを付けるポケモンがいません");
                 return;
             }
 
@@ -151,7 +143,6 @@ namespace PTCG
             }
             else
             {
-                Debug.LogError("[CardPlayHandler] ModalSystem.Instance is null");
             }
         }
 
@@ -160,7 +151,6 @@ namespace PTCG
         /// </summary>
         private void PlayPokemonCard(PlayerController player, PokemonCardData pokemon)
         {
-            // Debug.Log($"[CardPlayHandler] Playing Pokemon: {pokemon.cardName}");
 
             // バトル場が空なら自動的にバトル場へ
             if (player.activeSlot == null)
@@ -183,7 +173,6 @@ namespace PTCG
             if (options.Count == 1)
             {
                 // ベンチが満員の場合
-                Debug.Log("[CardPlayHandler] ベンチが満員です");
                 return;
             }
 
@@ -205,7 +194,6 @@ namespace PTCG
                             if (player.activeSlot != null && player.benchSlots.Count < 5)
                             {
                                 player.benchSlots.Add(player.activeSlot);
-                                // Debug.Log($"[CardPlayHandler] 既存のバトルポケモンをベンチへ移動");
                             }
                             GameManager.Instance.SpawnPokemonToActive(player, pokemon);
                         }
@@ -221,12 +209,11 @@ namespace PTCG
             }
             else
             {
-                Debug.LogError("[CardPlayHandler] ModalSystem.Instance is null");
             }
         }
 
         /// <summary>
-        /// CardUIからCardDataを取得（HandCardLayoutManager.cs:213-242と同じロジック）
+        /// CardUIからCardDataを取得（常にPlayer1の手札から取得）
         /// </summary>
         private CardData GetCardDataFromUI(GameObject cardUI)
         {
@@ -243,10 +230,10 @@ namespace PTCG
             if (nameText == null) return null;
             string cardName = nameText.text;
 
-            // GameManagerから現在のプレイヤーを取得
+            // Player1（ユーザー）の手札から取得
             if (GameManager.Instance == null || GameManager.Instance.player1 == null) return null;
 
-            PlayerController player = GameManager.Instance.GetCurrentPlayer();
+            PlayerController player = GameManager.Instance.player1;
             if (player == null) return null;
 
             foreach (var card in player.hand)
