@@ -115,7 +115,7 @@ namespace PTCG
             if (btn == null)
             {
                 btn = cardUI.AddComponent<Button>();
-                btn.transition = Selectable.Transition.None; // ColorTintを無効化（CardImageの色を保持）
+                btn.transition = Selectable.Transition.None; // ColorTintを無効化（カード画像を保持）
 
                 // ButtonのtargetGraphicをnullに（カード背景色を保持）
                 btn.targetGraphic = null;

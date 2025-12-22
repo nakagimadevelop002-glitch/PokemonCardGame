@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: NestBall
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: NestBall
   cardName: "\u30CD\u30B9\u30C8\u30DC\u30FC\u30EB"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: bd4215bf0efd933479cb6d5b8d95f9b6, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

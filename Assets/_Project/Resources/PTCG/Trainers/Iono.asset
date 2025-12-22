@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: Iono
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: Iono
   cardName: "\u30CA\u30F3\u30B8\u30E3\u30E2"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 91e7687c1f219ce49b890bb49d565ab7, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

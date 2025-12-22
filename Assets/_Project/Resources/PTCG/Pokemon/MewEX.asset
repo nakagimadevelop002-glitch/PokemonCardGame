@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: MewEX
   cardName: "\u30DF\u30E5\u30A6ex"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 27e2394b17f18d347872e04098a1e6cc, type: 3}
   stage: 0
   evolvesFrom: 
   type: 0

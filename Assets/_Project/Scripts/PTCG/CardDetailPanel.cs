@@ -17,7 +17,6 @@ namespace PTCG
         public Text cardTypeText;
         public Text cardHPText;
         public Text cardDescriptionText;
-        public Image cardTypeIcon;
 
         [Header("Panel Settings")]
         public Vector2 panelOffset = new Vector2(300f, 0f);
@@ -47,6 +46,14 @@ namespace PTCG
 
             // パネル表示
             panelRoot.SetActive(true);
+
+            // カード画像を表示（panelRootのImageコンポーネントに設定）
+            Image panelImage = panelRoot.GetComponent<Image>();
+            if (panelImage != null && cardData.cardArt != null)
+            {
+                panelImage.sprite = cardData.cardArt;
+                panelImage.color = Color.white; // 画像を正しく表示するため白にリセット
+            }
 
             // カード名
             if (cardNameText != null)
@@ -108,12 +115,6 @@ namespace PTCG
 
                     cardDescriptionText.text = description;
                 }
-
-                // タイプアイコン色
-                if (cardTypeIcon != null)
-                {
-                    cardTypeIcon.color = GetTypeColor(pkm.type);
-                }
             }
             // トレーナーカードの場合
             else if (cardData is TrainerCardData trainer)
@@ -132,11 +133,6 @@ namespace PTCG
                 {
                     cardDescriptionText.text = "トレーナーカードの効果";
                 }
-
-                if (cardTypeIcon != null)
-                {
-                    cardTypeIcon.color = Color.gray;
-                }
             }
             // エネルギーカードの場合
             else if (cardData is EnergyCardData energy)
@@ -154,11 +150,6 @@ namespace PTCG
                 if (cardDescriptionText != null)
                 {
                     cardDescriptionText.text = energy.cardName + "を提供します。";
-                }
-
-                if (cardTypeIcon != null)
-                {
-                    cardTypeIcon.color = Color.yellow;
                 }
             }
 
@@ -201,20 +192,6 @@ namespace PTCG
                 case PokemonType.M: return "[鋼]";
                 case PokemonType.C: return "[無]";
                 default: return "[?]";
-            }
-        }
-
-        private Color GetTypeColor(PokemonType type)
-        {
-            switch (type)
-            {
-                case PokemonType.P: return new Color(0.7f, 0.3f, 0.7f); // 紫
-                case PokemonType.D: return new Color(0.3f, 0.3f, 0.3f); // 黒
-                case PokemonType.Y: return new Color(1.0f, 0.7f, 0.8f); // ピンク
-                case PokemonType.G: return new Color(0.3f, 0.8f, 0.3f); // 緑
-                case PokemonType.M: return new Color(0.7f, 0.7f, 0.8f); // 灰色
-                case PokemonType.C: return new Color(0.8f, 0.8f, 0.8f); // 薄灰色
-                default: return Color.white;
             }
         }
     }

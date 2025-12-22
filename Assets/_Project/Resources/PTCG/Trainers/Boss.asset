@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: Boss
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: Boss
   cardName: "\u30DC\u30B9\u306E\u6307\u4EE4"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: b1d4e05a2196eaf478ba313daa5c2b5c, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

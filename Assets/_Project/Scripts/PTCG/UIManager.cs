@@ -418,11 +418,11 @@ namespace PTCG
         {
             if (cardUI == null) return;
 
-            // 不要な子要素（CardName, CardHP, CardImage）を全て削除
+            // 不要な子要素（CardName, CardHP）を全て削除
             List<Transform> childrenToDestroy = new List<Transform>();
             foreach (Transform child in cardUI.transform)
             {
-                if (child.name == "CardName" || child.name == "CardHP" || child.name == "CardImage")
+                if (child.name == "CardName" || child.name == "CardHP")
                 {
                     childrenToDestroy.Add(child);
                 }
@@ -529,10 +529,12 @@ namespace PTCG
         {
             if (cardUI == null || cardData == null) return;
 
+            // Get root Image component (CardUI itself)
+            Image cardImage = cardUI.GetComponent<Image>();
+
             // Find child components
             Text nameText = null;
             Text hpText = null;
-            Image cardImage = null;
 
             foreach (Transform child in cardUI.transform)
             {
@@ -540,8 +542,6 @@ namespace PTCG
                     nameText = child.GetComponent<Text>();
                 else if (child.name == "CardHP")
                     hpText = child.GetComponent<Text>();
-                else if (child.name == "CardImage")
-                    cardImage = child.GetComponent<Image>();
             }
 
             // Update text
@@ -609,10 +609,12 @@ namespace PTCG
         {
             if (cardUI == null || pokemon == null || pokemon.data == null) return;
 
+            // Get root Image component (CardUI itself)
+            Image cardImage = cardUI.GetComponent<Image>();
+
             // Find child components
             Text nameText = null;
             Text hpText = null;
-            Image cardImage = null;
 
             foreach (Transform child in cardUI.transform)
             {
@@ -620,8 +622,6 @@ namespace PTCG
                     nameText = child.GetComponent<Text>();
                 else if (child.name == "CardHP")
                     hpText = child.GetComponent<Text>();
-                else if (child.name == "CardImage")
-                    cardImage = child.GetComponent<Image>();
             }
 
             // Update text

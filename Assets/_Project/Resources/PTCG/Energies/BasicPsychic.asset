@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66e4303854aed634d9a3428bdc8a2d17, type: 3}
   m_Name: BasicPsychic
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: BasicPsychic
   cardName: "\u57FA\u672C\u8D85\u30A8\u30CD\u30EB\u30AE\u30FC"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 0afd2558aa361604994ea20bf2a46190, type: 3}
   isBasic: 1
   providesType: 0
   providesAmount: 1

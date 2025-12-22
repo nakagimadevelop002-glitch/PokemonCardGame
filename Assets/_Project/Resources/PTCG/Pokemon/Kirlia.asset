@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: Kirlia
   cardName: "\u30AD\u30EB\u30EA\u30A2"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 24df983b7da3ec74f929e8ab1fcbcef3, type: 3}
   stage: 1
   evolvesFrom: "\u30E9\u30EB\u30C8\u30B9"
   type: 0

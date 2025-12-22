@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8474adcbba6be24abb1a7bdcb7b4560, type: 3}
   m_Name: Research
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   cardID: Research
   cardName: "\u535A\u58EB\u306E\u7814\u7A76"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: f6851ce19acf6f446b4aaf5f49bb90b4, type: 3}
   trainerType: 0
   effectID: 
   effectDescription: 

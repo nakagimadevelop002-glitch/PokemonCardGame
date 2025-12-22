@@ -25,6 +25,8 @@ public class AllMCPToolsBuilder : McpBuilderScriptableObject
         builder.WithTools<ComponentAttachMCPTool>();
         builder.WithTools<ComprehensiveUICreatorMCPTool>();
         builder.WithTools<InspectorFieldSetterMCPTool>();
+        builder.WithTools<InstantiatePrefabMCPTool>();
+        builder.WithTools<MaterialCreatorMCPTool>();
         builder.WithTools<ScriptableObjectMCPTool>();
         builder.WithTools<ScriptableObjectFieldSetterMCPTool>();
         builder.WithTools<PlayModeControlMCPTool>();

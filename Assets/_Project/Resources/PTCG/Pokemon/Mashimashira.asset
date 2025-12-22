@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: Mashimashira
   cardName: "\u30DE\u30B7\u30DE\u30B7\u30E9"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: 21b217dbbdbd5054786073c3a4ea5240, type: 3}
   stage: 0
   evolvesFrom: 
   type: 1

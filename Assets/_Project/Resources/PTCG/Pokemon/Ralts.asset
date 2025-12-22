@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: Ralts
   cardName: "\u30E9\u30EB\u30C8\u30B9"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: fdc38b79c2949ba4cb5e389df7a28992, type: 3}
   stage: 0
   evolvesFrom: 
   type: 0

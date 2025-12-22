@@ -448,7 +448,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &139205928
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1158,7 +1158,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &324094522
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2697,7 +2697,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &925955613
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6294,8 +6294,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.02, y: 0.2}
   m_AnchorMax: {x: 0.18, y: 0.8}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 49.905273, y: -56.815308}
+  m_SizeDelta: {x: 130.5217, y: 175.0526}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2126829241
 MonoBehaviour:
@@ -6352,7 +6352,6 @@ MonoBehaviour:
   cardTypeText: {fileID: 139205929}
   cardHPText: {fileID: 684647962}
   cardDescriptionText: {fileID: 925955614}
-  cardTypeIcon: {fileID: 324094523}
   panelOffset: {x: 300, y: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

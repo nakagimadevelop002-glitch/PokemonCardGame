@@ -15,7 +15,7 @@ MonoBehaviour:
   cardID: Drifloon
   cardName: "\u30D5\u30EF\u30F3\u30C6"
   cardType: 0
-  cardArt: {fileID: 0}
+  cardArt: {fileID: 21300000, guid: fe8460a644dd4a64ebb8e3e755ae0f5f, type: 3}
   stage: 0
   evolvesFrom: 
   type: 0
